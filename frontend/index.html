@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <link rel="stylesheet" href="css/minireset.min.css">
+        <link rel="stylesheet" href="dist/main.css">
+        <script defer src="dist/bundle.js"></script>
+    </head>
+
+    <body>
+        <div class="bar">
+            <header>
+                <h1>WDumper</h1>
+                <p>A tool to create custom wikidata RDF dumps</p>
+            </header>
+        </div>
+
+        <main id="main">
+            <h2>Entities to export</h2>
+            <div id="entity-filters">
+            </div>
+            <div class="controls-add">
+                <img src="icons/add.svg"><a id="add-property-matcher" href="#">Add property matcher</a>
+                <img src="icons/add.svg"><a id="add-sparql-query" href="#">Add SPARQL query</a>
+            </div>
+
+            <h2>Statements to export</h2>
+            <div id="statement-filtes">
+                <button>Add filter</button>
+            </div>
+
+            <h2>Additional settings</h2>
+            <div id="additional-settings"></div>
+        </main>
+    </body>
+</html>
