@@ -1,0 +1,20 @@
+{
+  "extractEntities": [
+    { 
+      "type": "any",
+      "properties": {
+        "P31": {
+          "type": "entityid",
+          "value": "Q13442814",
+          "truthy": true
+        }
+      }
+    }
+  ],
+  "extractLanguages": [
+    "en", "en-gb", "en-ca", "de"
+  ],
+  "truthy": false,
+  "references": true,
+  "qualifiers": true
+}

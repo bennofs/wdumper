@@ -1,0 +1,26 @@
+{
+  "entityFilters": [
+    {
+      "properties": {
+        "P22": {}
+      }
+    }
+  ],
+  "extractEntities": [
+    { "snakPatterns": [ { "snaktype": "somevalue", "property": "P22" } ] },
+    { "snakPatterns": [ { "snaktype": "somevalue", "property": "P25" } ] },
+    { "snakPatterns": [ { "snaktype": "somevalue", "property": "P26" } ] },
+    { "snakPatterns": [ { "snaktype": "somevalue", "property": "P40" } ] },
+    { "snakPatterns": [ { "snaktype": "somevalue", "property": "P451" } ] },
+    { "snakPatterns": [ { "snaktype": "somevalue", "property": "P1038" } ] },
+    { "snakPatterns": [ { "snaktype": "somevalue", "property": "P1290" } ] },
+    { "snakPatterns": [ { "snaktype": "somevalue", "property": "P3373" } ] },
+    { "snakPatterns": [ { "snaktype": "somevalue",  "property": "P3448" } ] }
+  ],
+  "extractProperties": ["P22", "P25", "P26", "P40", "P451", "P1038", "P1290", "P3373", "P3448"],
+  "extractLanguages": ["en"],
+  "truthy": true,
+  "references": false,
+  "qualifiers": true,
+  "sitelinks": false
+}

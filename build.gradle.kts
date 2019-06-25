@@ -12,6 +12,8 @@ plugins {
 
     // Apply the application plugin to add support for building an application
     application
+
+    id("com.github.johnrengelman.shadow").version("5.0.0")
 }
 
 repositories {
@@ -23,17 +25,27 @@ repositories {
 dependencies {
     // This dependency is found on compile classpath of this component and consumers.
     implementation("com.google.guava:guava:27.0.1-jre")
+    implementation("org.apache.commons:commons-lang3:3.9")
 
     // Wikidata Toolkit
     implementation("org.wikidata.wdtk:wdtk-datamodel:0.9.0")
     implementation("org.wikidata.wdtk:wdtk-dumpfiles:0.9.0")
     implementation("org.wikidata.wdtk:wdtk-rdf:0.9.0")
+    implementation("info.picocli:picocli:4.0.0-alpha-3")
 
     // For ZSTD dumps
     implementation("com.github.luben:zstd-jni:1.4.0-1")
 
-    // logging implementation(
+    // RDF
+    implementation("org.eclipse.rdf4j:rdf4j-repository-sparql:2.3.2")
+    runtime("org.eclipse.rdf4j:rdf4j-rio-ntriples:2.3.2")
+
+    // logging implementation
     runtimeOnly("org.slf4j:slf4j-simple:1.7.26")
+
+    // json
+    implementation("com.fasterxml.jackson:jackson-bom:2.9.9")
+    implementation("com.kjetland:mbknor-jackson-jsonschema_2.13.0-M5:1.0.34")
 
     // Use JUnit test framework
     testImplementation("junit:junit:4.12")
