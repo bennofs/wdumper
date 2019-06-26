@@ -4,7 +4,7 @@ import resolve from 'rollup-plugin-node-resolve';
 export default {
   input: "./ts/main.ts",
   output: {
-    file: "dist/bundle.js",
+    file: "static/main.js",
     format: "iife",
     sourcemap: true
   },

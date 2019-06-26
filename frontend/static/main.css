@@ -1,0 +1,115 @@
+/**
+ * WikimediaUI Base v0.13.0
+ * Wikimedia Foundation user interface base variables
+ */
+.bar,
+.container {
+  background-color: #f8f8f8;
+}
+.bar {
+  border-bottom: 1px solid #e7e7e7;
+  padding-top: 0.5em;
+  padding-bottom: 0.5em;
+}
+.container {
+  border-radius: 5px;
+  border: 1px solid #e7e7e7;
+  padding: 0.5em;
+  margin-bottom: 0.5rem;
+}
+header {
+  display: block;
+}
+header h1 {
+  margin: 0 0.5em 0 0;
+  display: inline-block;
+}
+header p {
+  display: inline-block;
+}
+main h2:first-of-type {
+  margin-top: 1em;
+}
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+main {
+  color: #222;
+  margin-bottom: 0.6em;
+  margin-top: 2.5em;
+}
+h1 {
+  font-size: 1.5rem;
+}
+h2 {
+  font-size: 1.3rem;
+}
+main {
+  margin-top: 1.5rem;
+}
+main,
+header {
+  max-width: 80em;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+button.submit {
+  width: 100%;
+  padding-top: 0.75em;
+  padding-bottom: 0.75em;
+  font-size: 1.25rem;
+}
+.form-group {
+  display: flex;
+}
+.form-group .form-group--label {
+  border-radius: 2px 0 0 2px;
+  width: 10em;
+  background-color: #eaf3ff;
+  padding: 0.5rem 0rem 0.5rem 0.5rem;
+}
+.form-group .form-group--main {
+  margin-left: 1rem;
+}
+.form-label {
+  display: inline-block;
+  color: #72777d;
+  margin-right: 2em;
+  width: 8em;
+}
+.prop-constraint .prop {
+  width: 9rem;
+  margin-right: 1rem;
+}
+.form-line {
+  margin-bottom: 0.25em;
+}
+.radio-group {
+  display: inline;
+  margin: 0;
+}
+.radio-group .radio-group--option {
+  display: inline;
+  margin-right: 1em;
+}
+.radio-group label {
+  margin-left: 0.25rem;
+}
+#entity-filters {
+  margin-bottom: 1rem;
+}
+.controls-add {
+  display: flex;
+  align-items: center;
+}
+.controls-add a {
+  margin-right: 1rem;
+}
+.hide {
+  display: none;
+}

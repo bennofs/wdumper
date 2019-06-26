@@ -8,3 +8,7 @@ out
 # IDE files
 .idea
 *.iml
+
+# temp files
+.attach_pid*
+dumpfiles
