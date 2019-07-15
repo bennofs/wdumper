@@ -5,12 +5,18 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "redom": "^3.22.1"
+    "autocompleter": "^4.0.2",
+    "insignia": "^5.0.0",
+    "mithril": "^1.1.6",
+    "redom": "^3.22.1",
+    "taggle": "^1.14.4",
+    "tail.select": "^0.5.14"
   },
   "devDependencies": {
     "@types/redom": "^3.12.1",
     "dtsgenerator": "^2.0.7",
     "rollup": "^1.14.4",
+    "rollup-plugin-commonjs": "^10.0.0",
     "rollup-plugin-node-resolve": "^5.0.1",
     "rollup-plugin-typescript2": "^0.21.1",
     "tslib": "^1.9.3",
@@ -18,7 +24,7 @@
   },
   "scripts": {
     "rollup": "rollup -c",
-    "less": "lessc css/main.less > dist/main.css",
+    "less": "lessc css/main.less static/main.css",
     "all": "npm run rollup && npm run less"
   }
 }

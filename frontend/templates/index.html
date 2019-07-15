@@ -1,38 +1,71 @@
-<!DOCTYPE html>
-<html>
-    <head>
-        <link rel="stylesheet" href="{{ url_for('static', filename='minireset.min.css') }}">
-        <link rel="stylesheet" href="{{ url_for('static', filename='main.css') }}">
-        <script defer src="{{ url_for('static', filename='main.js') }}"></script>
-    </head>
+{% extends "base.html" %}
 
-    <body>
-        <div class="bar">
-            <header>
-                <h1>WDumper</h1>
-                <p>A tool to create custom wikidata RDF dumps</p>
-            </header>
+{% block content %}
+
+<div class="section">
+    <h2>Filter entities</h2>
+    <span class="description">
+        Choose entities to include in the dump. An entity is included if it matches at least one filter.
+    </span>
+
+    <div id="entity-match-all" class="card card-default">
+        <span class="card-label">
+            Everything
+        </span>
+
+        <div class="card-main">
+            No filters added. All entities are included.
         </div>
+    </div>
 
-        <main id="main">
-            <h2>Entities to export</h2>
-            <div id="entity-filters">
-            </div>
-            <div class="controls-add">
-                <img src="{{ url_for('static', filename="icons/add.svg") }}">
-                <a id="add-property-matcher" href="#">Add property matcher</a>
+    <div id="entity-filters">
+    </div>
 
-                <img src="{{ url_for('static', filename="icons/add.svg") }}">
-                <a id="add-sparql-query" href="#">Add SPARQL query</a>
-            </div>
+    <div class="controls-add">
+        <a id="add-item-filter" class="link-button" href="#">
+            <img src="{{ url_for('static', filename="icons/add.svg") }}">
+            Add item filter
+        </a>
 
-            <h2>Statements to export</h2>
-            <div id="statement-filtes">
-                <button>Add filter</button>
-            </div>
+        <a id="add-property-filter" class="link-button" href="#">
+            <img src="{{ url_for('static', filename="icons/add.svg") }}">
+            Add property filter
+        </a>
 
-            <h2>Additional settings</h2>
-            <div id="additional-settings"></div>
-        </main>
-    </body>
-</html>
+        <a id="add-sparql-query" class="link-button" href="#">
+            <img src="{{ url_for('static', filename="icons/add.svg") }}">
+            Add SPARQL query
+        </a>
+        </span>
+    </div>
+</div>
+
+<div class="section">
+    <h2>Filter statements</h2>
+    <span class="description">
+        Choose how statements are exported. These rules are applied to all matched entities.
+    </span>
+
+    <div id="statement-filters">
+    </div>
+
+    <div class="controls-add">
+        <a id="add-statement-filter" class="link-button" href="#">
+            <img src="{{ url_for('static', filename="icons/add.svg") }}">
+            Add custom rule
+        </a>
+    </div>
+</div>
+
+<div class="section">
+    <h2>Additional settings</h2>
+    <div id="additional-settings"></div>
+</div>
+
+<div class="section">
+    <h2>Dump metadata</h2>
+    <div id="dump-metadata"></div>
+</div>
+
+<button id="submit">Create dump</button>
+{% endblock %}

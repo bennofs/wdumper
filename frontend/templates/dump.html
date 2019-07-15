@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2>Dump {{n}}: {{ dump.title }}</h2>
+
+<table>
+    <tr class="table-label">
+        <td>Created at</td>
+        <td>{{ dump.created_at }} </td>
+    </tr>
+    {% if dump.run %}
+    <tr>
+        <td>Processing started at</td>
+        <td>{{ dump.run.started_at }} </td>
+    </tr>
+    <tr>
+        <td>Processing finished at</td>
+        <td>{{ dump.run.finished_at }} </td>
+    </tr>
+    <tr>
+        <td>Progress (processed items)</td>
+        <td>{{ dump.run.count }}</td>
+    </tr>
+    {% endif %}
+
+    {% if dump.done %}
+    <tr> 
+        <td><a href="{{dump.download_link}}">Download</a></td>
+    </tr>
+    {% endif %}
+
+</table>
+
+<br>
+
+<h3>Spec</h3>
+<p>
+    <code>
+    <pre>
+{{json.dumps(json.loads(dump.spec), indent=2)}}
+    </pre>
+    </code>
+</p>
+
+{% if dump.error_message %}
+<h3>Error message</h3>
+<code>
+    <pre>
+{{dump.error_message}}
+    </pre>
+</code>
+{% endif %}
+
+{% endblock %}

@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <link rel="stylesheet" href="{{ url_for('static', filename='minireset.min.css') }}">
+        <link rel="stylesheet" href="{{ url_for('static', filename='main.css') }}">
+        <link rel="stylesheet" href="{{ url_for('static', filename='tail.select-light.min.css') }}">
+
+        <script defer type="text/javascript">
+         var ICONS_URL = '{{ url_for("static", filename="icons/") }}';
+        </script>
+        <script defer src="{{ url_for('static', filename='langcodes.js') }}"></script>
+        <script defer src="{{ url_for('static', filename='main.js') }}"></script>
+    </head>
+
+    <body>
+        <div class="bar">
+            <header>
+                <a href="/"><h1>WDumper</h1></a>
+                <p>A tool to create custom wikidata RDF dumps</p>
+            </header>
+        </div>
+
+        <main id="main">
+            {% block content %}{% endblock %}
+        </main>
+    </body>
+</html>

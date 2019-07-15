@@ -1,96 +1,62 @@
-import { el, list, mount, List } from "redom";
+import { el, list, List, mount } from "redom";
+import autocomplete from "autocompleter";
 
-interface ValueFilter {
-    property: string,
-    type: "novalue" | "somevalue" | "entityid" | "anyvalue" | "any";
-    value?: string;
-    truthy: boolean;
-}
+import * as m from "./model";
+import { buildRadioGroup } from "./dom-helpers";
+import { completeWikidata } from "./complete";
+import TagList from "./tag-list";
 
-interface EntityFilter {
-    type: "item" | "property" | "lexeme";
-    properties: ValueFilter[];
-}
-const ENTITY_TYPES = ["item", "property", "lexeme"]
+declare const ICONS_URL: string;
+declare const LANGCODES: { [code:string]: {code: string, label: string}};
 
-interface StatementFilter {
-    properties?: String[];
-    simple: boolean;
-    full: boolean;
-    references: boolean;
-    qualifiers: boolean;
-}
-
-interface DumpSpec {
-    entities: EntityFilter[];
-    statements: StatementFilter[];
-    languages: string[];
-
-    labels: boolean;
-    descriptions: boolean;
-    aliases: boolean;
-    truthy: boolean;
-    meta: boolean;
-    sitelinks: boolean;
-}
-
-const {buildRadioGroup} = new class {
-    sequence = 0;
-    buildRadioGroup = <T extends keyof any>(initial: string, choices: { [K in T]?: string }, handler: ((x: T) => void)): HTMLElement => {
-        const radioName = "radio-" + this.sequence;
-        this.sequence++;
-
-        const node = el("li.radio-group", Object.keys(choices).map(value => {
-            const label = choices[value];
-            return el("li.radio-group--option", [
-                el("input", {"type": "radio", "name": radioName, "value": value, "id": radioName + "-" + value, "checked": value == initial}),
-                el("label", {"for": radioName + "-" + value}, label)
-            ]);
-        }));
-
-        node.addEventListener("change", (event: Event) => {
-            const target = event.target as HTMLInputElement;
-            handler(target.value as T);
-        })
-
-        return node;
-    }
-}
-
-class SinglePropertyMatcher {
+class PropertyMatcher {
     readonly el: HTMLElement;
-    readonly model: ValueFilter;
+    model: m.ValueFilter;
+    id: number = null;
 
     readonly valueEl: HTMLInputElement;
     readonly propertyEl: HTMLInputElement;
+    readonly removeEl: HTMLElement;
 
-    constructor(model: ValueFilter) {
-        this.model = model;
-        const group = buildRadioGroup(this.model.type, {
+    readonly canRemove: (id: number) => boolean;
+
+    constructor(canRemove: (id: number) => boolean, remove: (id: number) => void) {
+        this.canRemove = canRemove;
+
+        this.removeEl = el("a.img-button", [
+            el("img", {"src": ICONS_URL + "/trash.svg", "alt": "remove"})
+        ]);
+        this.removeEl.addEventListener("click", (e) => {
+            e.preventDefault();
+            remove(this.id);
+        })
+
+        const group = buildRadioGroup("anyvalue", {
             "anyvalue": "exists",
-            "entityid": "entity",
+            "entityid": "has value",
         }, (ty) => this.setType(ty));
 
         this.propertyEl = el("input", {"type": "text", placeholder: "P31"}) as HTMLInputElement;
-        this.propertyEl.addEventListener("blur", () => {
+        this.propertyEl.addEventListener("change", () => {
             this.model.property = this.propertyEl.value;
         });
+        completeWikidata("property", this.propertyEl);
 
         this.valueEl = el("input", {"type":"text", placeholder: "Q5"}) as HTMLInputElement;
-        this.valueEl.addEventListener("blur", () => {
+        this.valueEl.addEventListener("change", () => {
             this.model.value = this.valueEl.value;
         })
+        completeWikidata("item", this.valueEl);
 
-        this.el = el("li.form-line.prop-constraint", [
-            this.propertyEl,
-            group,
-            this.valueEl
+        this.el = el("tr", [
+            el("td", this.propertyEl),
+            el("td", group),
+            el("td", this.valueEl),
+            el("td", this.removeEl)
         ]);
-
-        this.sync();
     }
 
-    setType(type: ValueFilter["type"]) {
+    setType(type: m.ValueFilter["type"]) {
         this.model.type = type;
         if (type == "entityid") {
             this.model.value = this.valueEl.value;
@@ -100,161 +66,504 @@ class SinglePropertyMatcher {
         this.sync();
     }
 
+    update(model: m.ValueFilter) {
+        this.model = model;
+        this.id = model.id;
+        this.propertyEl.value = this.model.property;
+        this.valueEl.value = this.model.value || "";
+        this.sync();
+    }
+
     sync() {
         this.valueEl.classList.toggle("hide", this.model.type != "entityid");
         this.propertyEl.value = this.model.property;
         if (this.model.type == "entityid") {
             this.valueEl.value = this.model.value;
         }
+        this.removeEl.classList.toggle("hide", !this.canRemove(this.id));
     }
 }
 
-class PropertyEntityMatcher {
+class BasicEntityFilterView {
     readonly el: HTMLElement;
-    readonly type: HTMLElement;
-    readonly model: EntityFilter;
-    readonly propertiesEl: HTMLElement;
-    readonly propertyViews: SinglePropertyMatcher[];
+    readonly typeEl: HTMLSpanElement;
+    readonly propertiesEl: List;
 
-    constructor(model: EntityFilter, id: number, remove: () => void) {
-        this.model = model;
+    model: m.EntityFilter;
+    id: number;
 
-        const typeGroupEl = buildRadioGroup(this.model.type, {
-            "item": "item",
-            "property": "property",
-            "lexeme": "lexeme"
-        }, (type) => { this.model.type = type; });
-        this.propertyViews = [];
+    constructor(remove: (id: number) => void) {
+        const addLink = el(
+            "a.link-button",
+            el("img", {'src': ICONS_URL + "/add.svg"}),
+            "Add condition"
+        );
 
-        const addButton = el("button", "+");
-        addButton.addEventListener("click", () => this.add())
+        addLink.addEventListener("click", (e) => {
+            e.preventDefault();
+            this.add()
+        });
 
-        this.el = el(".form-group", [
-            el(".form-group--label", "Property"),
-            el(".form-group--main",
-               el(".form-line", el("p.form-label", "entity type"), typeGroupEl),
-               el(".form-line", el("p.form-label", "properties"), addButton),
-               this.propertiesEl = el("ul")
-              )
+        const deleteButton = el("a.img-button", [
+            el("img", {'src': ICONS_URL + "/close.svg"}),
+        ]);
+        deleteButton.addEventListener("click", (e) => {
+            e.preventDefault();
+            remove(this.id)
+        });
+
+        this.el = el(".card", [
+            el(".card-label", this.typeEl = el("span"), deleteButton),
+            el(".card-main",
+               el("table", 
+                  el("tr",
+                     el("th", "property"),
+                     el("th", "constraint"),
+                     el("th", "value"),
+                     el("th", {"width": "40em"}, "")
+                  ),
+                  this.propertiesEl = list("tbody", PropertyMatcher.bind(
+                      undefined,
+                      (id) => Object.values(this.model.properties).length > 1,
+                      (id) => this.remove(id)
+                  ), "id")
+                 ),
+               el(".controls-add", addLink)
+           )
         ])
     }
 
+    update(model: m.EntityFilter) {
+        this.model = model;
+        this.id = model.id;
+
+        this.typeEl.textContent = this.model.type;
+        this.propertiesEl.update(Object.values(this.model.properties));
+    }
+
     add() {
-        const initial: ValueFilter = {
-            property: "P31",
+        const initial: m.ValueFilter = m.createWithId({
+            property: "",
             type: "anyvalue",
             truthy: false
-        }
-        this.model.properties.push(initial);
+        });
+        this.model.properties[initial.id] = initial;
+        this.propertiesEl.update(Object.values(this.model.properties));
+    }
 
-        const view = new SinglePropertyMatcher(initial);
-        this.propertyViews.push(view)
-
-        this.propertiesEl.appendChild(view.el);
+    remove(id: number) {
+        delete this.model.properties[id];
+        this.update(this.model);
     }
 }
 
 
 class EntityFiltersView {
+    readonly el: List;
+    readonly emptyEl: HTMLElement;
     readonly container: HTMLElement;
-    readonly matchers: { [key:number]: PropertyEntityMatcher };
 
-    nextId: number;
+    model: { [id: number]: m.EntityFilter }
 
-    constructor(container: HTMLElement, filters: EntityFilter[]) {
+    constructor(container: HTMLElement) {
         this.container = container
-        this.nextId = 0;
-        this.matchers = {}
+        this.emptyEl = document.getElementById("entity-match-all");
+        this.el = list(this.container, BasicEntityFilterView.bind(undefined, (id: number) => this.remove(id)), "id")
 
-        for (const filter of filters) {
-            this.add(filter)
-        }
+        document.getElementById("add-item-filter").addEventListener("click", () => this.add("item"));
+        document.getElementById("add-property-filter").addEventListener("click", () => this.add("property"));
+    }
 
-        document.getElementById("add-property-matcher").addEventListener("click", () => {
-            this.add({
-                "type": "item",
-                "properties": []
-            })
-        })
+    add(type: m.EntityFilter["type"]) {
+        const prop = m.createWithId({
+            property: "",
+            type: "exists",
+            truthy: false
+        });
+
+        const properties = {}
+        properties[prop.id] = prop;
+
+        const initial: m.EntityFilter = m.createWithId({
+            type,
+            properties
+        });
+
+        this.model[initial.id] = initial;
+        this.update(this.model);
     }
 
     remove(id: number) {
-        // unmount
-        this.matchers[id].el.remove();
-        delete this.matchers[id];
+        delete this.model[id];
+        this.update(this.model);
     }
 
-    add(filter: EntityFilter) {
-        const id = this.nextId;
-        const view = new PropertyEntityMatcher(filter, id, () => this.remove(id));
+    update(model: {[id:number]: m.EntityFilter}) {
+        this.model = model;
 
-        this.matchers[this.nextId] = view;
-        this.nextId += 1;
+        const matchers = Object.values(this.model);
+        this.el.update(matchers);
 
-        // mount the new element
-        this.container.appendChild(view.el);
+        this.emptyEl.classList.toggle("hide", matchers.length != 0);
     }
 }
 
 class StatementFilterView {
-    readonly model: StatementFilter
+    readonly el: HTMLElement;
+    readonly propertyList: TagList;
+
+    readonly labelEl: HTMLElement;
+    readonly propertiesEl: HTMLElement;
+    readonly defaultEl: HTMLElement;
+    readonly removeEl: HTMLElement;
+
+    readonly simpleStatementEl: HTMLInputElement;
+    readonly fullStatementEl: HTMLInputElement;
+    readonly referencesEl: HTMLInputElement;
+    readonly qualifiersEl: HTMLInputElement;
+
+    model: m.StatementFilter;
+    id: number;
+
+    constructor(remove: (id: number) => void) {
+        this.el = el(".card.card-two", [
+            el(".card-label", [
+                this.labelEl = el("span" ,"Custom"),
+                this.removeEl = el("a.img-button", [
+                    el("img", {"src": ICONS_URL + "/close.svg", "alt": "remove"})
+                ])
+            ]),
+            el(".card-main",
+               this.propertiesEl = el(".left", [
+                   el("h3", "Properties"),
+                   this.propertyList = new TagList(completeWikidata.bind(undefined, "property"))
+               ]),
+               this.defaultEl = el(".left.hide", [
+                   el("h3", "Default rule"),
+                   el("span.form-label", "This rule is applied to all matched entities")
+               ]),
+               el(".right", [
+                   el("h3", "Parts to export"),
+                   el(".form-line",
+                      el("p.form-label", "simple statement"),
+                      this.simpleStatementEl = el("input", {"type": "checkbox"}) as HTMLInputElement),
+                   el(".form-line",
+                      el("p.form-label", "full statement"),
+                      this.fullStatementEl = el("input", {"type": "checkbox"}) as HTMLInputElement),
+                   el(".form-line",
+                      el("p.form-label", "references"),
+                      this.referencesEl = el("input", {"type": "checkbox"}) as HTMLInputElement),
+                   el(".form-line",
+                      el("p.form-label", "qualifiers"),
+                      this.qualifiersEl = el("input", {"type": "checkbox"}) as HTMLInputElement),
+               ])
+            )
+        ])
+
+        this.simpleStatementEl.addEventListener("change", () => { this.model.simple = this.simpleStatementEl.checked });
+        this.fullStatementEl.addEventListener("change", () => { this.model.full = this.fullStatementEl.checked });
+        this.referencesEl.addEventListener("change", () => { this.model.references = this.referencesEl.checked });
+        this.qualifiersEl.addEventListener("change", () => { this.model.qualifiers = this.qualifiersEl.checked });
+
+        this.removeEl.addEventListener("click", () => {
+            if (this.model.properties) {
+                remove(this.id);
+            }
+        })
+    }
+
+    update(model: m.StatementFilter) {
+        this.model = model;
+        this.id = model.id;
+
+        if (this.model.properties) {
+            this.labelEl.textContent = "Custom";
+            this.propertyList.update(this.model.properties);
+            this.propertiesEl.style.removeProperty("display");
+            this.defaultEl.style.display = "none";
+            this.removeEl.style.removeProperty("display");
+        } else {
+            this.labelEl.textContent = "Default";
+            this.propertiesEl.style.display = "none";
+            this.defaultEl.style.removeProperty("display");
+            this.removeEl.style.display = "none";
+        }
+
+        this.simpleStatementEl.checked = this.model.simple;
+        this.fullStatementEl.checked = this.model.full;
+        this.referencesEl.checked = this.model.references;
+        this.qualifiersEl.checked = this.model.qualifiers;
+    }
 }
 
 class StatementFiltersView {
+    readonly el: List;
     readonly container: HTMLElement;
-    readonly matchers: { [key:number]: StatementFilterView }
 
-    nextId: number;
+    model: { [id: number]: m.StatementFilter }
 
-    constructor(container: HTMLElement, model: StatementFilter) {
+    constructor(container: HTMLElement) {
         this.container = container
-        this.nextId = 0;
-        this.matchers = {}
+        this.el = list(this.container, StatementFilterView.bind(undefined, (id: number) => this.remove(id)), "id")
 
-        for (const filter of filters) {
-            this.add(filter)
-        }
+        document.getElementById("add-statement-filter").addEventListener("click", (e) => {
+            this.add()
+            e.preventDefault();
+        });
+    }
 
-        document.getElementById("add-property-matcher").addEventListener("click", () => {
-            this.add({
-                "type": "item",
-                "properties": []
-            })
+    update(model: {[id: number]: m.StatementFilter}) {
+        this.model = model;
+        this.el.update(Object.values(this.model));
+    }
+
+    add(isDefault: boolean = false) {
+        let initial = m.createWithId({
+            simple: true,
+            full: false,
+            references: false,
+            qualifiers: false,
+            properties: []
         })
+        if (isDefault) {
+            delete initial.properties;
+        }
+        this.model[initial.id] = initial;
+        this.update(this.model);
+    }
+
+    remove(id: number) {
+        delete this.model[id];
+        this.update(this.model);
     }
 }
 
 class AdditionalSettingsView {
-}
+    readonly el: HTMLElement;
 
-class DumpSpecView {
-    readonly entityFiltersView: EntityFiltersView;
-    readonly statementFiltersView: StatementFiltersView;
-    readonly additionalSettingsView: AdditionalSettingsView;
-    readonly parent: HTMLElement;
-    readonly model: DumpSpec
+    readonly languageFilterEl: HTMLInputElement;
+    readonly languageListLabel: HTMLElement;
+    readonly languageList: TagList;
 
-    constructor(parent: HTMLElement, init: DumpSpec) {
-        this.parent = parent;
-        this.model = init
+    model: m.DumpSpec;
+    savedLanguageList: string[] = [];
 
-        const entityFiltersEl = document.getElementById("entity-filters");
-        const statementFiltersEl = document.getElementById("statement-filters");
-        const additionalSettingsEl = document.getElementById("additional-settings");
 
-        this.entityFiltersView = new EntityFiltersView(document.getElementById("entity-filters"), this.model.entities);
-        this.statementFiltersView = new StatementFiltersView(document.getElementById("statement-filters"), this.model.statements);
-        this.additionalSettingsView = new AdditionalSettingsView();
+    readonly labelsEl: HTMLInputElement;
+    readonly descriptionsEl: HTMLInputElement;
+    readonly aliasesEl: HTMLInputElement;
+    readonly sitelinksEl: HTMLInputElement;
+
+    constructor() {
+        this.el = el("div", [
+            el(".form-line",
+               el("p.form-label", "labels"),
+               this.labelsEl = el("input", {"type": "checkbox"}) as HTMLInputElement),
+            el(".form-line",
+               el("p.form-label", "descriptions"),
+               this.descriptionsEl = el("input", {"type": "checkbox"}) as HTMLInputElement),
+            el(".form-line",
+               el("p.form-label", "aliases"),
+               this.aliasesEl = el("input", {"type": "checkbox"}) as HTMLInputElement),
+            el(".form-line",
+               el("p.form-label", "sitelinks"),
+               this.sitelinksEl = el("input", {"type": "checkbox"}) as HTMLInputElement),
+            el(".form-line",
+               el("p.form-label", "filter languages"),
+               el("span", [
+                   el("p", [
+                       this.languageFilterEl = el("input", {"type": "checkbox"}) as HTMLInputElement,
+                       this.languageListLabel = el("span.form-label", "only include the following languages:"),
+                   ]),
+                   this.languageList = new TagList((input, onselect) => {
+                       this.setupCompleter(input, onselect)
+                   })
+               ]))
+        ]);
+
+        this.labelsEl.addEventListener("change", () => {
+            this.model.labels = this.labelsEl.checked;
+        });
+
+        this.descriptionsEl.addEventListener("change", () => {
+            this.model.descriptions = this.descriptionsEl.checked;
+        });
+
+        this.aliasesEl.addEventListener("change", () => {
+            this.model.aliases = this.aliasesEl.checked;
+        });
+
+        this.sitelinksEl.addEventListener("change", () => {
+            this.model.sitelinks = this.sitelinksEl.checked; 
+        });
+
+        this.languageFilterEl.addEventListener("change", () => {
+            if (this.languageFilterEl.checked) {
+                this.model.languages = this.savedLanguageList;
+            } else {
+                if (this.model.languages) {
+                    this.savedLanguageList = this.model.languages;
+                }
+                delete this.model.languages;
+            }
+
+            this.update(this.model);
+        })
+    }
+
+    update(model: m.DumpSpec) {
+        this.model = model;
+
+        this.labelsEl.checked = this.model.labels;
+        this.descriptionsEl.checked = this.model.descriptions;
+        this.aliasesEl.checked = this.model.aliases;
+        this.sitelinksEl.checked = this.model.sitelinks;
+
+        if (this.model.languages) {
+            this.languageFilterEl.checked = true;
+            this.languageList.el.style.removeProperty("display");
+            this.languageListLabel.style.removeProperty("display");
+            this.languageList.update(this.model.languages);
+        } else {
+            this.languageFilterEl.checked = false;
+            this.languageList.el.style.display = "none";
+            this.languageListLabel.style.display = "none";
+        }
+    }
+
+
+
+    setupCompleter(input: HTMLInputElement, onselect: () => void) {
+        autocomplete<{label: string, code: string}>({
+            input,
+
+            onSelect(item) {
+                input.value = item.code;
+
+                const changeEv = new Event("change");
+                input.dispatchEvent(changeEv);
+
+                onselect();
+            },
+
+            fetch(text, update) {
+                let matchesPrefix = [];
+                let matchesCode = [];
+                let matchesLabel = [];
+
+                for (let item of Object.values(LANGCODES)) {
+                    if (item.code.toLowerCase().startsWith(text.toLowerCase())) {
+                        matchesPrefix.push(item);
+                        continue;
+                    }
+
+                    if (item.code.toLowerCase().includes(text.toLowerCase())) {
+                        matchesCode.push(item);
+                        continue;
+                    }
+
+                    if (item.label.toLowerCase().includes(text.toLowerCase())) {
+                        matchesLabel.push(item);
+                    }
+                }
+
+                update(matchesPrefix.concat(matchesCode.concat(matchesLabel)));
+            },
+
+            customize(_input, _inputRect, container, _maxHeight) {
+                container.style.width = "30rem";
+            }
+        })
     }
 }
 
-const initSpec: DumpSpec = {
-    entities: [{
-        type: "item",
-        properties: []
-    }],
-    statements: [],
-    languages: [],
+class MetadataView {
+    readonly el: HTMLElement;
+    readonly titleEl: HTMLInputElement;
+
+    model: m.DumpMetadata;
+
+    constructor() {
+        this.el = el("", [
+            el(".form-line", [
+                el(".form-label", "Dump title"),
+                this.titleEl = el("input", {"type": "text"}) as HTMLInputElement
+            ])
+        ])
+
+        this.titleEl.addEventListener("change", () => {
+            this.model.title = this.titleEl.value.trim();
+            this.update(this.model);
+        })
+    }
+
+    update(model: m.DumpMetadata) {
+        this.model = model;
+
+        this.titleEl.value = model.title;
+    }
+}
+
+class DumpCreatorView {
+    readonly entityFiltersView: EntityFiltersView;
+    readonly statementFiltersView: StatementFiltersView;
+    readonly additionalSettingsView: AdditionalSettingsView;
+    readonly metadataView: MetadataView;
+    readonly parent: HTMLElement;
+    readonly model: m.DumpSpec;
+    readonly metadata: m.DumpMetadata;
+
+    constructor(parent: HTMLElement, init: m.DumpSpec) {
+        this.parent = parent;
+        this.model = init;
+        this.metadata = { title: "" };
+
+        this.entityFiltersView = new EntityFiltersView(document.getElementById("entity-filters"));
+        this.statementFiltersView = new StatementFiltersView(document.getElementById("statement-filters"));
+        this.additionalSettingsView = new AdditionalSettingsView();
+        this.metadataView = new MetadataView()
+
+        mount(document.getElementById("additional-settings"), this.additionalSettingsView);
+        mount(document.getElementById("dump-metadata"), this.metadataView);
+
+        document.getElementById("submit").addEventListener("click", () => {
+            this.submit();
+        });
+
+        this.entityFiltersView.update(this.model.entities);
+        this.statementFiltersView.update(this.model.statements);
+        this.additionalSettingsView.update(this.model);
+        this.metadataView.update(this.metadata);
+    }
+
+    submit() {
+        const data = {
+            ...this.model,
+            entities: Object.values(this.model.entities).map(entity => {
+                return {
+                    ...entity,
+                    properties: Object.values(entity.properties)
+                };
+            }),
+            statements: Object.values(this.model.statements),
+        };
+
+        fetch("/create", {
+            method: "POST",
+            body: JSON.stringify({
+                spec: data,
+                metadata: this.metadata,
+            }),
+            headers: { "Content-Type": "application/json" }
+        }).then(r => r.json()).then(r => {
+            window.location = r.url;
+        })
+    }
+}
+
+const initSpec: m.DumpSpec = {
+    entities: {},
+    statements: {},
 
     labels: true,
     descriptions: true,
@@ -265,4 +574,7 @@ const initSpec: DumpSpec = {
 };
 
 const mainEl = document.getElementById("main");
-window['view'] = new DumpSpecView(mainEl, initSpec);
+const view = new DumpCreatorView(mainEl, initSpec);
+
+view.statementFiltersView.add(true);
+window['view'] = view

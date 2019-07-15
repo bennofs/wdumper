@@ -46,6 +46,17 @@ dependencies {
     // json
     implementation("com.fasterxml.jackson:jackson-bom:2.9.9")
     implementation("com.kjetland:mbknor-jackson-jsonschema_2.13.0-M5:1.0.34")
+    implementation("com.fasterxml.jackson.module:jackson-module-parameter-names:2.9.9")
+
+    // jdbi
+    implementation("org.jdbi:jdbi3-core:3.8.2");
+
+    // mysql
+    implementation("mysql:mysql-connector-java:8.0.16")
+
+    // HTTP rest client
+    implementation("com.konghq:unirest-java:2.3.08")
+    implementation("com.konghq:unirest-objectmapper-jackson:2.3.08")
 
     // Use JUnit test framework
     testImplementation("junit:junit:4.12")

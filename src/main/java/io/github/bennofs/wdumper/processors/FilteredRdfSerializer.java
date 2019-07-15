@@ -1,6 +1,8 @@
-package io.github.bennofs.wdumper;
+package io.github.bennofs.wdumper.processors;
 
+import io.github.bennofs.wdumper.interfaces.DumpStatusHandler;
 import io.github.bennofs.wdumper.spec.DumpSpec;
+import io.github.bennofs.wdumper.spec.StatementOptions;
 import org.apache.commons.lang3.NotImplementedException;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Resource;
@@ -11,6 +13,7 @@ import org.wikidata.wdtk.datamodel.interfaces.*;
 import org.wikidata.wdtk.rdf.*;
 import org.wikidata.wdtk.rdf.values.AnyValueConverter;
 
+import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Collection;
 import java.util.List;
@@ -30,7 +33,10 @@ public class FilteredRdfSerializer implements EntityDocumentDumpProcessor {
     private final RankBuffer rankBuffer = new RankBuffer();
     private int count = 0;
 
-    FilteredRdfSerializer(DumpSpec spec, OutputStream output, Sites sites, PropertyRegister propertyRegister) {
+    private final DumpStatusHandler statusHandler;
+    private final OutputStream outputStream;
+
+    public FilteredRdfSerializer(DumpSpec spec, OutputStream output, Sites sites, PropertyRegister propertyRegister, DumpStatusHandler statusHandler) {
         this.spec = spec;
         this.rdfWriter = new RdfWriter(spec.getFormat(), output);
         this.sites = sites;
@@ -43,6 +49,8 @@ public class FilteredRdfSerializer implements EntityDocumentDumpProcessor {
                 valueRdfConverter);
         this.referenceRdfConverter = new ReferenceRdfConverter(rdfWriter,
                 this.snakRdfConverter, this.propertyRegister.getUriPrefix());
+        this.statusHandler = statusHandler;
+        this.outputStream = output;
     }
 
 
@@ -54,8 +62,7 @@ public class FilteredRdfSerializer implements EntityDocumentDumpProcessor {
 
             writeItemDocument(itemDocument);
         } catch(Exception e) {
-            System.err.println("failed to process item, document " + this.count);
-            throw e;
+            this.statusHandler.reportError(DumpStatusHandler.ErrorLevel.ERROR, "failed to process item, document " + this.count + ": error " + e.toString());
         }
     }
 
@@ -67,8 +74,7 @@ public class FilteredRdfSerializer implements EntityDocumentDumpProcessor {
 
             writePropertyDocument(propertyDocument);
         } catch(Exception e) {
-            System.err.println("failed to process property, document " + this.count);
-            throw e;
+            this.statusHandler.reportError(DumpStatusHandler.ErrorLevel.ERROR, "failed to process item, document " + this.count + ": error " + e.toString());
         }
     }
 
@@ -80,8 +86,7 @@ public class FilteredRdfSerializer implements EntityDocumentDumpProcessor {
 
             throw new NotImplementedException("serialization of lexemes not implemented yet");
         } catch(Exception e) {
-            System.err.println("failed to process lexeme, document " + this.count);
-            throw e;
+            this.statusHandler.reportError(DumpStatusHandler.ErrorLevel.ERROR, "failed to process item, document " + this.count + ": error " + e.toString());
         }
     }
 
@@ -130,9 +135,9 @@ public class FilteredRdfSerializer implements EntityDocumentDumpProcessor {
         }
 
         writeDocumentTerms(subject, document);
-        writeTruthyStatements(subject, document);
+        writeSimpleStatements(subject, document, this.spec.isTruthy());
         if (!spec.isTruthy())
-            writeStatements(subject, document);
+            writeStatements(subject, document, this.spec.isTruthy());
 
         if (spec.isSitelinks())
             writeSiteLinks(subject, document.getSiteLinks());
@@ -160,7 +165,7 @@ public class FilteredRdfSerializer implements EntityDocumentDumpProcessor {
                 RdfWriter.WB_PROPERTY_TYPE,
                 this.rdfWriter.getUri(document.getDatatype().getIri()));
 
-        writeStatements(subject, document);
+        writeStatements(subject, document, this.spec.isTruthy());
         writeInterPropertyLinks(document);
 
         this.snakRdfConverter.writeAuxiliaryTriples();
@@ -230,7 +235,7 @@ public class FilteredRdfSerializer implements EntityDocumentDumpProcessor {
         // TODO something more with NO_VALUE
     }
 
-    void writeStatements(Resource subject, StatementDocument statementDocument)
+    void writeStatements(Resource subject, StatementDocument statementDocument, boolean truthy)
             throws RDFHandlerException {
         for (StatementGroup statementGroup : statementDocument
                 .getStatementGroups()) {
@@ -244,25 +249,35 @@ public class FilteredRdfSerializer implements EntityDocumentDumpProcessor {
 
         for (StatementGroup statementGroup : statementDocument
                 .getStatementGroups()) {
-            if (!spec.includeProperty(statementGroup.getProperty().getId())) continue;
+            final StatementOptions options = spec.findStatementOptions(statementGroup.getProperty().getId());
+            if (options == null) continue;
+
+            if (truthy) {
+                statementGroup = statementGroup.getBestStatements();
+                if (statementGroup == null) continue;
+            }
 
             for (Statement statement : statementGroup) {
-                writeStatement(statement);
+                writeStatement(statement, options);
             }
             writeBestRankTriples();
         }
     }
 
-    void writeTruthyStatements(Resource subject,
-                               StatementDocument statementDocument) {
+    void writeSimpleStatements(Resource subject,
+                               StatementDocument statementDocument,
+                               boolean truthy) {
         for (StatementGroup statementGroup : statementDocument
                 .getStatementGroups()) {
-            if (!spec.includeProperty(statementGroup.getProperty().getId())) continue;
+            final StatementOptions options = spec.findStatementOptions(statementGroup.getProperty().getId());
+            if (options == null) continue;
 
-            final StatementGroup best = statementGroup.getBestStatements();
-            if (best == null) continue;
+            if (truthy) {
+                statementGroup = statementGroup.getBestStatements();
+                if (statementGroup == null) continue;
+            }
 
-            for (Statement statement : best) {
+            for (Statement statement : statementGroup) {
                 if (statement.getQualifiers().size() == 0) {
                     this.snakRdfConverter.setSnakContext(subject,
                             PropertyContext.DIRECT);
@@ -275,10 +290,18 @@ public class FilteredRdfSerializer implements EntityDocumentDumpProcessor {
 
     void writeDocumentTerms(Resource subject, TermedDocument document)
             throws RDFHandlerException {
-        writeTermTriples(subject, RdfWriter.RDFS_LABEL, document.getLabels().values()); // TODO: what about schema:name,skos:prefLabel
-        writeTermTriples(subject, RdfWriter.SCHEMA_DESCRIPTION, document.getDescriptions().values());
-        for (List<MonolingualTextValue> aliases : document.getAliases().values()) {
-            writeTermTriples(subject, RdfWriter.SKOS_ALT_LABEL, aliases);
+        if (this.spec.isLabels()) {
+            writeTermTriples(subject, RdfWriter.RDFS_LABEL, document.getLabels().values()); // TODO: what about schema:name,skos:prefLabel
+        }
+
+        if (this.spec.isDescriptions()) {
+            writeTermTriples(subject, RdfWriter.SCHEMA_DESCRIPTION, document.getDescriptions().values());
+        }
+
+        if (this.spec.isAliases()) {
+            for (List<MonolingualTextValue> aliases : document.getAliases().values()) {
+                writeTermTriples(subject, RdfWriter.SKOS_ALT_LABEL, aliases);
+            }
         }
     }
 
@@ -326,15 +349,15 @@ public class FilteredRdfSerializer implements EntityDocumentDumpProcessor {
         this.rankBuffer.clear();
     }
 
-    void writeStatement(Statement statement) throws RDFHandlerException {
+    void writeStatement(Statement statement, StatementOptions options) throws RDFHandlerException {
         String statementUri = Vocabulary.getStatementUri(statement);
         Resource statementResource = this.rdfWriter.getUri(statementUri);
 
         this.rdfWriter.writeTripleValueObject(statementResource,
                 RdfWriter.RDF_TYPE, RdfWriter.WB_STATEMENT);
-        writeClaim(statementResource, statement.getClaim());
+        writeClaim(statementResource, statement.getClaim(), options);
 
-        if (this.spec.isReferences())
+        if (options.isReferences())
             writeReferences(statementResource, statement.getReferences());
 
         writeStatementRankTriple(statementResource, statement.getRank());
@@ -350,7 +373,7 @@ public class FilteredRdfSerializer implements EntityDocumentDumpProcessor {
         }
     }
 
-    void writeClaim(Resource claimResource, Claim claim) {
+    void writeClaim(Resource claimResource, Claim claim, StatementOptions options) {
         // write main snak
         this.snakRdfConverter.setSnakContext(claimResource,
                 PropertyContext.VALUE);
@@ -359,7 +382,7 @@ public class FilteredRdfSerializer implements EntityDocumentDumpProcessor {
                 PropertyContext.VALUE_SIMPLE);
         claim.getMainSnak().accept(this.snakRdfConverter);
 
-        if (this.spec.isQualifiers()) {
+        if (options.isQualifiers()) {
             // write qualifier
             this.snakRdfConverter.setSnakContext(claimResource,
                     PropertyContext.QUALIFIER);
@@ -468,5 +491,10 @@ public class FilteredRdfSerializer implements EntityDocumentDumpProcessor {
     @Override
     public void close() {
         this.rdfWriter.finish();
+        try {
+            this.outputStream.close();
+        } catch(IOException e) {
+            this.statusHandler.reportError(DumpStatusHandler.ErrorLevel.WARNING, "closing the output stream failed: " + e.toString());
+        }
     }
 }

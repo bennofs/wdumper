@@ -1,10 +1,12 @@
 package io.github.bennofs.wdumper.spec;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.apache.commons.lang3.Validate;
 import org.wikidata.wdtk.datamodel.interfaces.*;
 
+@JsonIgnoreProperties({"id"})
 public class ValueFilter implements SnakVisitor<Boolean> {
     public enum ValueFilterType {
         @JsonProperty("novalue") NO_VALUE,
@@ -14,16 +16,19 @@ public class ValueFilter implements SnakVisitor<Boolean> {
         @JsonProperty("any") ANY
     }
 
+    private final String property;
     private final ValueFilterType type;
     private final String value;
     private final boolean truthy;
 
     @JsonCreator
     ValueFilter(
+            @JsonProperty(value = "property", required = true) String property,
             @JsonProperty(value = "type", required = true) ValueFilterType type,
             @JsonProperty(value = "value") String value,
             @JsonProperty(value = "truthy", required = true) boolean truthy
     ) {
+        this.property = property;
         this.type = type;
         this.value = value;
         this.truthy = truthy;
@@ -96,5 +101,9 @@ public class ValueFilter implements SnakVisitor<Boolean> {
         }
 
         return false;
+    }
+
+    public String getProperty() {
+        return property;
     }
 }

@@ -7,17 +7,21 @@ import com.google.common.base.MoreObjects;
 import org.eclipse.rdf4j.rio.RDFFormat;
 import org.wikidata.wdtk.datamodel.interfaces.StatementDocument;
 
+import java.util.HashMap;
+import java.util.Objects;
 import java.util.Set;
 
 public class DumpSpec {
-    final private EntityFilter[] extractEntities;
-    final private Set<String>  extractProperties;
-    final private Set<String> extractLanguages;
+    final private EntityFilter[] entities;
+    final private HashMap<String, StatementOptions> statementOptions;
+    private StatementOptions statementOptionsAll;
+    final private Set<String> languages;
 
     final private boolean truthy;
-    final private boolean references;
-    final private boolean qualifiers;
     final private boolean meta;
+    final private boolean labels;
+    final private boolean descriptions;
+    final private boolean aliases;
     final private boolean sitelinks;
 
     @JsonIgnore
@@ -25,35 +29,45 @@ public class DumpSpec {
 
     @JsonCreator
     public DumpSpec(
-            @JsonProperty("extractEntities") EntityFilter[] extractEntities,
-            @JsonProperty("extractProperties") Set<String> extractProperties,
-            @JsonProperty("extractLanguages") Set<String> extractLanguages,
+            @JsonProperty("entities") EntityFilter[] entities,
+            @JsonProperty("statements") Set<StatementFilter> statements,
+            @JsonProperty("languages") Set<String> languages,
+            @JsonProperty(value = "labels") boolean labels,
+            @JsonProperty(value = "descriptions") boolean descriptions,
+            @JsonProperty(value = "aliases") boolean aliases,
             @JsonProperty(value = "truthy", defaultValue = "false") boolean truthy,
-            @JsonProperty(value = "references", defaultValue = "true") boolean references,
-            @JsonProperty(value = "qualifiers", defaultValue = "true") boolean qualifiers,
             @JsonProperty(value = "meta", defaultValue = "true") boolean meta,
             @JsonProperty(value = "sitelinks", defaultValue = "true") boolean sitelinks
     ) {
-        this.extractEntities = extractEntities;
-        this.extractProperties = extractProperties;
-        this.extractLanguages = extractLanguages;
+        Objects.requireNonNull(entities);
+        Objects.requireNonNull(statements);
+
+        this.entities = entities;
+        this.languages = languages;
+        this.labels = labels;
+        this.descriptions = descriptions;
+        this.aliases = aliases;
         this.truthy = truthy;
-        this.references = references;
-        this.qualifiers = qualifiers;
         this.meta = meta;
         this.sitelinks = sitelinks;
+
+        this.statementOptions = new HashMap<>();
+        this.statementOptionsAll = new StatementOptions();
+        for (StatementFilter statementFilter : statements) {
+            if (statementFilter.getProperties() == null) {
+                statementOptionsAll = statementOptionsAll.union(statementFilter.getOptions());
+                continue;
+            }
+
+            for (final String property : statementFilter.getProperties()) {
+                final StatementOptions options = statementFilter.getOptions().union(this.statementOptions.get(property));
+                this.statementOptions.put(property, options);
+            }
+        }
     }
 
     public boolean isTruthy() {
         return truthy;
-    }
-
-    public boolean isReferences() {
-        return references;
-    }
-
-    public boolean isQualifiers() {
-        return qualifiers;
     }
 
     public boolean isMeta() {
@@ -64,41 +78,53 @@ public class DumpSpec {
         return sitelinks;
     }
 
+    public boolean isLabels() {
+        return labels;
+    }
+
+    public boolean isDescriptions() {
+        return descriptions;
+    }
+
+    public boolean isAliases() {
+        return aliases;
+    }
+
     public RDFFormat getFormat() {
         return format;
     }
 
     public boolean includeDocument(StatementDocument doc) {
-        if (extractEntities == null) return true;
+        if (entities.length == 0) return true;
 
-        for (EntityFilter filterSpec : extractEntities) {
+        for (EntityFilter filterSpec : entities) {
             if (filterSpec.matches(doc)) return true;
         }
 
         return false;
     }
 
-    public boolean includeLanguage(String code) {
-        if (extractLanguages == null) return true;
-
-        return extractLanguages.contains(code);
+    public StatementOptions findStatementOptions(final String property) {
+        final StatementOptions specific = statementOptions.getOrDefault(property, new StatementOptions());
+        return specific.union(this.statementOptionsAll);
     }
 
-    public boolean includeProperty(String id) {
-        if (extractProperties == null) return true;
+    public boolean includeLanguage(String code) {
+        if (languages == null) return true;
 
-        return extractProperties.contains(id);
+        return languages.contains(code);
     }
 
     @Override
     public String toString() {
         return MoreObjects.toStringHelper(this)
-                .add("extractEntities", extractEntities)
-                .add("extractProperties", extractProperties)
-                .add("extractLanguages", extractLanguages)
+                .add("entities", entities)
+                .add("statementOptions", statementOptions)
+                .add("languages", languages)
+                .add("labels", labels)
+                .add("descriptions", descriptions)
+                .add("aliases", aliases)
                 .add("truthy", truthy)
-                .add("references", references)
-                .add("qualifiers", qualifiers)
                 .add("meta", meta)
                 .add("sitelinks", sitelinks)
                 .toString();

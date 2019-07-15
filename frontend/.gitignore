@@ -3,3 +3,8 @@ dist
 .rpt2_cache
 __pycache__
 env/
+static/main.css
+static/main.js
+static/main.js.map
+__pycache__
+*.pyc

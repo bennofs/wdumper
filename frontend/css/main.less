@@ -1,65 +1,223 @@
 @import "./wikimedia-ui-base.less";
 
+@font-size-small: 0.9em;
 
-.bar, .container {
-    background-color: #f8f8f8;
+/* page layout (bar, main, sections) */
+main, header {
+    max-width: 60em;
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: 1rem;
+    padding-right: 1rem;
 }
 
 .bar {
+    background-color: @wmui-color-base80;
     border-bottom: 1px solid #e7e7e7;
     padding-top: 0.5em;
     padding-bottom: 0.5em;
-}
-
-.container {
-    border-radius: 5px;
-    border: 1px solid #e7e7e7;
-    padding: 0.5em;
-    margin-bottom: 0.5rem;
+    margin-bottom: 2rem;
 }
 
 header {
     display: block; 
-}
 
-header h1 {
-    margin: 0 0.5em 0 0;
-    display: inline-block;
-}
+    h1 {
+        margin: 0 0.5em 0 0;
+        display: inline-block;
+    }
 
-header p {
-    display: inline-block;
-}
-
-main h2:first-of-type {
-    margin-top: 1em;
-}
-
-h1, h2, h3, h4, h5, h6, main {
-    color: @color-base;
-    margin-bottom: 0.6em;
-    margin-top: 2.5em;
-}
-
-h1 {
-    font-size: 1.5rem;
-}
-
-h2 {
-    font-size: 1.3rem;
+    p {
+        display: inline-block;
+    }
 }
 
 main {
     margin-top: 1.5rem;
 }
 
-main, header {
-    max-width: 80em;
-    margin-left: auto;
-    margin-right: auto;
+.section {
+    margin-bottom: 3.5em;
+    border-left: 1px solid #00000040;
     padding-left: 1rem;
-    padding-right: 1rem;
+    margin-left: -1rem;
+
+    .description {
+        display: block;
+        margin-bottom: 1rem;
+    }
 }
+
+/* headings */
+h1, h2, h3, h4, h5, h6, main {
+    color: @color-base;
+    margin-bottom: 0.5em;
+}
+
+h1 {
+    font-size: 1.5rem;
+    text-shadow: @text-shadow-base;
+}
+
+h2 {
+    font-size: 1.3rem;
+}
+
+/* structure elements */
+.card {
+    border: @border-base;
+    border-radius: @border-radius-base;
+    box-shadow: @box-shadow-card;
+    padding-bottom: 1rem;
+    max-width: 50em;
+    margin-bottom: 0.5rem;
+    min-height: 3rem;
+    position: relative;
+
+    table {
+        table-layout: fixed;
+    }
+
+    .card-label {
+        border-radius: @border-radius-base;
+        display: inline-block;
+        padding: 0.5em 0.5em 0.5em 0.5em;
+        background-color: @background-color-primary;
+        position: absolute;
+        top: 0;
+        right: 0;
+    }
+
+    .card-main {
+        display: block;
+        margin-top: 1rem;
+        margin-left: 1rem;
+    }
+
+    &.card-default {
+        opacity: 0.6;
+        border-style: dashed;
+    }
+
+    table {
+        width: 100%;
+    }
+}
+
+.card-two {
+    .card-main {
+        display: flex;
+    }
+    .left {
+        flex-grow: 1;
+        max-width: 33%;
+        margin-right: 1rem;
+
+        display: flex;
+        flex-direction: column;
+    } 
+    .right {
+        flex-grow: 2;
+    }
+}
+
+/* form elements */
+.tag-list-input {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+
+    .tag-list-new {
+        margin-top: auto;
+    }
+
+    .img-input {
+        margin-top: 0.3rem;
+    }
+}
+
+
+
+.img-input {
+    border: @border-base;
+    :hover {
+        border-color: @border-color-base--hover;
+    }
+
+    img {
+        display: inline-block;
+        vertical-align: text-bottom;
+        border-right: @border-base;
+    }
+
+    input {
+        outline: 0;
+        border: 0;
+        margin: 0;
+        padding: 0;
+        padding-left: 0.5rem;
+    }
+}
+
+.tag {
+    margin-right: 0.25rem;
+    background-color: @background-color-tabs;
+    cursor: pointer;
+
+    .tag-remove {
+        height: 0.7em;
+        width: 1em;
+        background: url('/static/icons/close.svg') no-repeat;
+        background-size: contain;
+        background-position: center;
+        display: inline-block;
+        cursor: pointer;
+    }
+}
+
+
+.controls-add {
+    margin-top: 0.5rem;
+}
+
+.link-button {
+    margin-right: 1rem; 
+
+    :visited, &, img {
+        display: inline-flex;
+        align-items: center;
+        color: @color-primary;
+        fill: @color-primary;
+        text-decoration: none;
+        font-size: @font-size-small;
+    }
+
+    &:hover {
+        text-decoration: underline;    
+        cursor: pointer;
+    }
+}
+
+.img-button {
+    opacity: 0.3;
+    margin-left: 0.5rem;
+    
+    :visited, &, img {
+        color: @color-primary;
+        font-size: @font-size-small;
+    }
+
+    img {
+        vertical-align: text-bottom;
+    }
+
+    &:hover {
+        opacity: 1;
+        text-decoration: underline;    
+        cursor: pointer;
+    }
+}
+
 
 button.submit {
     width: 100%;
@@ -68,26 +226,16 @@ button.submit {
     font-size: 1.25rem;
 }
 
-.form-group {
-    display: flex;
-
-    .form-group--label {
-        border-radius: @border-radius-base 0 0 @border-radius-base;
-        width: 10em;
-        background-color: @background-color-primary;
-        padding: 0.5rem 0rem 0.5rem 0.5rem;
-    }
-
-    .form-group--main {
-        margin-left: 1rem;
-    }
-}
 
 .form-label {
     display: inline-block;
     color: @color-base--subtle;
     margin-right: 2em;
-    width: 8em;
+}
+
+.form-group.empty-default {
+    height: 4rem;
+    padding-left: 4rem;
 }
 
 .prop-constraint {
@@ -99,7 +247,25 @@ button.submit {
 
 .form-line {
     margin-bottom: 0.25em;
+
+    & > .form-label {
+        width: 10em;
+    }
+
+    & > * {
+        display: inline-block;
+        vertical-align: text-top;
+    }
+
+    input {
+        margin-right: 0.5rem;
+    }
+
+    .tag-list-input {
+        margin-top: 0.5rem;
+    }
 }
+
 
 .radio-group {
     display: inline;
@@ -113,19 +279,52 @@ button.submit {
     }
 }
 
-#entity-filters {
-    margin-bottom: 1rem;
+
+.autocomplete {
+    background: white;
+    z-index: 1000;
+    font: @font-size-small sans;
+    box-sizing: border-box;
+    border: @border-base;
+
+    * {
+        font: inherit;
+    }
+
+    & > div {
+        padding: 0 0.5em 0.2em 0.5em; 
+    }
+
+    .label {
+        font-size: 1rem;
+    }
+
+    .description {
+        opacity: 0.6;
+    }
+
+    & > div:hover:not(.group),
+    & > div.selected {
+        background: @background-color-primary--hover;
+        cursor: pointer;
+    }
 }
 
-.controls-add {
-    display: flex;
-    align-items: center;
-}
-
-.controls-add a {
-    margin-right: 1rem;
-}
-
+/* special styles */
 .hide {
     display: none;
 }
+
+#additional-settings {
+    margin-bottom: 3rem;
+}
+
+#submit {
+    font-size: 1.2rem;
+}
+
+td {
+    padding: 1rem 1rem 0rem 0rem;
+}
+
+/* temporary rules for experiments */
