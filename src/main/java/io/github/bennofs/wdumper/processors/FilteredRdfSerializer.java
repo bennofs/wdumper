@@ -135,9 +135,7 @@ public class FilteredRdfSerializer implements EntityDocumentDumpProcessor {
         }
 
         writeDocumentTerms(subject, document);
-        writeSimpleStatements(subject, document, this.spec.isTruthy());
-        if (!spec.isTruthy())
-            writeStatements(subject, document, this.spec.isTruthy());
+        writeStatements(subject, document, this.spec.isTruthy());
 
         if (spec.isSitelinks())
             writeSiteLinks(subject, document.getSiteLinks());
@@ -239,6 +237,9 @@ public class FilteredRdfSerializer implements EntityDocumentDumpProcessor {
             throws RDFHandlerException {
         for (StatementGroup statementGroup : statementDocument
                 .getStatementGroups()) {
+            final StatementOptions options = spec.findStatementOptions(statementGroup.getProperty().getId());
+            if (options == null || (!options.isFull() && !options.isQualifiers() && !options.isReferences())) continue;
+
             IRI property = this.rdfWriter.getUri(Vocabulary.getPropertyUri(
                     statementGroup.getProperty(), PropertyContext.STATEMENT));
             for (Statement statement : statementGroup) {
@@ -250,27 +251,7 @@ public class FilteredRdfSerializer implements EntityDocumentDumpProcessor {
         for (StatementGroup statementGroup : statementDocument
                 .getStatementGroups()) {
             final StatementOptions options = spec.findStatementOptions(statementGroup.getProperty().getId());
-            if (options == null) continue;
-
-            if (truthy) {
-                statementGroup = statementGroup.getBestStatements();
-                if (statementGroup == null) continue;
-            }
-
-            for (Statement statement : statementGroup) {
-                writeStatement(statement, options);
-            }
-            writeBestRankTriples();
-        }
-    }
-
-    void writeSimpleStatements(Resource subject,
-                               StatementDocument statementDocument,
-                               boolean truthy) {
-        for (StatementGroup statementGroup : statementDocument
-                .getStatementGroups()) {
-            final StatementOptions options = spec.findStatementOptions(statementGroup.getProperty().getId());
-            if (options == null) continue;
+            if (options == null || !options.isFull()) continue;
 
             if (truthy) {
                 statementGroup = statementGroup.getBestStatements();
@@ -284,7 +265,9 @@ public class FilteredRdfSerializer implements EntityDocumentDumpProcessor {
                     statement.getMainSnak()
                             .accept(this.snakRdfConverter);
                 }
+                writeStatement(subject, statement, options);
             }
+            writeBestRankTriples();
         }
     }
 
@@ -349,19 +332,39 @@ public class FilteredRdfSerializer implements EntityDocumentDumpProcessor {
         this.rankBuffer.clear();
     }
 
-    void writeStatement(Statement statement, StatementOptions options) throws RDFHandlerException {
+    void writeStatement(Resource subject, Statement statement, StatementOptions options) throws RDFHandlerException {
         String statementUri = Vocabulary.getStatementUri(statement);
         Resource statementResource = this.rdfWriter.getUri(statementUri);
 
-        this.rdfWriter.writeTripleValueObject(statementResource,
-                RdfWriter.RDF_TYPE, RdfWriter.WB_STATEMENT);
-        writeClaim(statementResource, statement.getClaim(), options);
+        if (this.spec.isMeta()) {
+            this.rdfWriter.writeTripleValueObject(statementResource,
+                    RdfWriter.RDF_TYPE, RdfWriter.WB_STATEMENT);
+        }
+
+        if (options.isSimple()) {
+            writeSimpleStatement(subject, statement);
+        }
+
+        if (options.isFull()) {
+            writeClaim(statementResource, statement.getClaim(), options);
+        }
 
         if (options.isReferences())
             writeReferences(statementResource, statement.getReferences());
 
-        writeStatementRankTriple(statementResource, statement.getRank());
+        if (options.isFull()) {
+            writeStatementRankTriple(statementResource, statement.getRank());
+        }
+    }
 
+
+    void writeSimpleStatement(Resource subject, Statement statement) {
+        if (statement.getQualifiers().size() == 0) {
+            this.snakRdfConverter.setSnakContext(subject,
+                    PropertyContext.DIRECT);
+            statement.getMainSnak()
+                    .accept(this.snakRdfConverter);
+        }
     }
 
     void writeReferences(Resource statementResource,
