@@ -15,10 +15,8 @@ import org.wikidata.wdtk.datamodel.implementation.PropertyIdValueImpl;
 import org.wikidata.wdtk.datamodel.interfaces.EntityDocumentDumpProcessor;
 import org.wikidata.wdtk.datamodel.interfaces.PropertyIdValue;
 import org.wikidata.wdtk.dumpfiles.DumpProcessingController;
-import org.wikidata.wdtk.dumpfiles.EntityTimerProcessor;
 import org.wikidata.wdtk.dumpfiles.MwDumpFile;
 import org.wikidata.wdtk.rdf.PropertyRegister;
-import picocli.CommandLine;
 
 import java.io.*;
 import java.nio.file.Files;
@@ -99,6 +97,7 @@ public class DumpRunner {
         final GzipParameters gzipParameters = new GzipParameters();
         gzipParameters.setCompressionLevel(1);
         final OutputStream compressStream = new GzipCompressorOutputStream(bufferedStream, gzipParameters);
+
         return asynchronousOutputStream(compressStream);
     }
 
@@ -159,6 +158,7 @@ public class DumpRunner {
                 } catch (IOException ioException) {
                     ioException.printStackTrace();
                 } finally {
+                    System.out.println("closing output stream");
                     close(pis);
                     close(outputStream);
                 }
