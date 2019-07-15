@@ -14,6 +14,17 @@ def render_404(msg):
     r.status_code = 404
     return r
 
+@app.route("/dumps")
+def dumps():
+    page = request.args.get('page', 1, type=int)
+    dumps = Dump.query.order_by(Dump.created_at.desc()).paginate(page, 20, True)
+
+    prev_url = url_for('dumps', page=dumps.prev_num) if dumps.has_prev else None
+    next_url = url_for('dumps', page=dumps.next_num) if dumps.has_next else None
+
+    return render_template('dumps.html', dumps=dumps, next_url=next_url, prev_url=prev_url)
+
+
 @app.route("/dump/<int:n>")
 def dump(n: int):
     dump = Dump.query.get(n)

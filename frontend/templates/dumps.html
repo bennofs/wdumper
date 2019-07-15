@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2>Recent dumps</h2>
+
+<table>
+    <tr>
+        <td>Title</td>
+        <td>Created at</td>
+        <td>Finished</td>
+        <td>Download link</td>
+    </tr>
+{% for dump in dumps.items %}
+    <tr>
+        <td><a href="{{ url_for('dump', n=dump.id) }}">{{ dump.title }}</a></td>
+        <td>{{ dump.created_at }}</td>
+        {% if dump.done %}
+        <td>at {{dump.run.finished_at}}</td>
+        <td><a href="{{dump.download_link}}">Download</a></td>
+        {% else %}
+        <td>not finished</td>
+        <td></td>
+        {% endif %}
+    </tr>
+{% endfor %}
+</table>
+
+{% if prev_url %}
+<a class="prev" href="{{prev_url}}">Prev</a>
+{% endif %}
+
+{% if next_url %}
+<a class="next" href="{{next_url}}">Next</a>
+{% endif %}
+
+
+{% endblock %}
