@@ -35,7 +35,6 @@ public class DumpRunner {
     private final PropertyRegister propertyRegister;
 
     private final List<EntityDocumentDumpProcessor> processors;
-    private final List<OutputStream> outputStreams;
 
     private final Path outputDirectory;
 
@@ -50,7 +49,6 @@ public class DumpRunner {
         this.propertyRegister = propertyRegister;
 
         this.processors = new ArrayList<>();
-        this.outputStreams = new ArrayList<>();
 
         this.outputDirectory = outputDirectory;
     }
