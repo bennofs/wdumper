@@ -1,7 +1,5 @@
 import { el, list, List } from "redom";
 
-declare const ICONS_URL: string;
-
 class Tag {
     readonly el: HTMLSpanElement;
     readonly textEl: HTMLSpanElement;
@@ -10,17 +8,17 @@ class Tag {
         const icon = el("span.tag-remove");
         this.el = el("span.tag", this.textEl = el("span") as HTMLSpanElement, icon);
 
-        this.el.addEventListener("click", (e) => {
+        this.el.addEventListener("click", (_e) => {
             remove(this.el.textContent)
         });
     }
 
-    update(data) {
+    update(data: string) {
         this.textEl.textContent = data;
     }
 }
 
-export default class {
+export class TagList {
     readonly el: HTMLElement;
     readonly propertiesEl: List;
     readonly inputEl: HTMLInputElement;
@@ -38,7 +36,7 @@ export default class {
         ]));
 
         this.el = el(".tag-list-input", [
-            this.propertiesEl = list(".tags", Tag.bind(undefined, (data) => this.remove(data))),
+            this.propertiesEl = list(".tags", Tag.bind(undefined, (data: string) => this.remove(data))),
             form
         ]);
 
@@ -57,7 +55,7 @@ export default class {
         this.completerCallback(this.inputEl, () => this.add());
     }
 
-    remove(data) {
+    remove(data: string) {
         for (let i = 0; i < this.tags.length; ++i) {
             if (this.tags[i] === data) {
                 this.tags.splice(i, 1);

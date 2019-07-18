@@ -83,10 +83,14 @@ h2 {
         table-layout: fixed;
     }
 
-    .card-label {
+    table:not(:first-child) {
+        margin-top: 0.8rem;
+    }
+
+    .card-corner {
         border-radius: @border-radius-base;
         display: inline-block;
-        padding: 0.5em 0.5em 0.5em 0.5em;
+        padding: 0.5em 0.5em 0.5em 0em;
         background-color: @background-color-primary;
         position: absolute;
         top: 0;
@@ -232,7 +236,7 @@ button.submit {
 }
 
 
-.form-label {
+.form-label, .form-text {
     display: inline-block;
     color: @color-base--subtle;
     margin-right: 2em;
