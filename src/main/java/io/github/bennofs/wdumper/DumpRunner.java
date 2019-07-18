@@ -7,16 +7,11 @@ import io.github.bennofs.wdumper.processors.ProgressReporter;
 import io.github.bennofs.wdumper.spec.DumpSpec;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorOutputStream;
 import org.apache.commons.compress.compressors.gzip.GzipParameters;
-import org.eclipse.rdf4j.model.IRI;
-import org.eclipse.rdf4j.query.BindingSet;
-import org.eclipse.rdf4j.repository.RepositoryConnection;
-import org.eclipse.rdf4j.repository.sparql.SPARQLRepository;
-import org.wikidata.wdtk.datamodel.implementation.PropertyIdValueImpl;
 import org.wikidata.wdtk.datamodel.interfaces.EntityDocumentDumpProcessor;
-import org.wikidata.wdtk.datamodel.interfaces.PropertyIdValue;
 import org.wikidata.wdtk.dumpfiles.DumpProcessingController;
 import org.wikidata.wdtk.dumpfiles.MwDumpFile;
 import org.wikidata.wdtk.rdf.PropertyRegister;
+import org.wikidata.wdtk.rdf.SPARQLPropertyRegister;
 
 import java.io.*;
 import java.nio.file.Files;
@@ -25,8 +20,6 @@ import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-
-import static org.wikidata.wdtk.datamodel.helpers.Datamodel.SITE_WIKIDATA;
 
 public class DumpRunner {
     private final int id;
@@ -55,12 +48,12 @@ public class DumpRunner {
 
     static public DumpRunner create(final int id, final MwDumpFile dumpFile, Path outputDirectory) {
         final DumpProcessingController controller = new DumpProcessingController("wikidatawiki");
-        final PropertyRegister propertyRegister = wdPropertyRegisterFromSparql();
+        final PropertyRegister propertyRegister = SPARQLPropertyRegister.createWithWDQS();
 
         return new DumpRunner(id, dumpFile, controller, propertyRegister, outputDirectory);
     }
 
-    public void addDumpTask(int id, DumpSpec spec, DumpStatusHandler statusHandler) throws IOException {
+    void addDumpTask(int id, DumpSpec spec, DumpStatusHandler statusHandler) throws IOException {
         final OutputStream output = openGzipOutput(this.outputDirectory.resolve(id + ".nt.gz"));
 
         FilteredRdfSerializer serializer = new FilteredRdfSerializer(spec, output, controller.getSitesInformation(), propertyRegister, statusHandler);
@@ -97,32 +90,6 @@ public class DumpRunner {
         final OutputStream compressStream = new GzipCompressorOutputStream(bufferedStream, gzipParameters);
 
         return asynchronousOutputStream(compressStream);
-    }
-
-    private static PropertyRegister wdPropertyRegisterFromSparql() {
-        final PropertyRegister propertyRegister = PropertyRegister.getWikidataPropertyRegister();
-
-        // deleted properties, but still available in dumps
-        propertyRegister.setPropertyType(new PropertyIdValueImpl("P6270", SITE_WIKIDATA), "http://wikiba.se/ontology#ExternalId");
-
-        final SPARQLRepository repository = new SPARQLRepository("https://query.wikidata.org/sparql");
-        repository.initialize();
-        final RepositoryConnection connection = repository.getConnection();
-
-        var query = connection.prepareTupleQuery("SELECT ?prop ?type WHERE { ?prop wikibase:propertyType ?type }");
-        try (final var result = query.evaluate()) {
-            while (result.hasNext()) {
-                final BindingSet solution = result.next();
-                final IRI property = (IRI)solution.getValue("prop");
-                final IRI propType = (IRI)solution.getValue("type");
-                final PropertyIdValue propId = new PropertyIdValueImpl(property.getLocalName(), SITE_WIKIDATA);
-                propertyRegister.setPropertyType(propId, propType.toString());
-
-            }
-            return propertyRegister;
-        } finally {
-            repository.shutDown();
-        }
     }
 
     /**
