@@ -434,6 +434,8 @@ class AdditionalSettingsView {
 
 
     setupCompleter(input: HTMLInputElement, onselect: () => void) {
+        const self = this;
+
         autocomplete<{label: string, code: string}>({
             input,
 
@@ -452,6 +454,11 @@ class AdditionalSettingsView {
                 let matchesLabel = [];
 
                 for (let item of Object.values(LANGCODES)) {
+                    // do not present as option if already added
+                    if (self.model.languages.includes(item.code)) {
+                        continue;
+                    }
+
                     if (item.code.toLowerCase().startsWith(text.toLowerCase())) {
                         matchesPrefix.push(item);
                         continue;
