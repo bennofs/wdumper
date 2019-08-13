@@ -22,7 +22,7 @@
             </header>
         </div>
 
-        <main id="main">
+        <main id="main" data-view="{% block view %}{% endblock %}">
             {% block content %}{% endblock %}
         </main>
     </body>

@@ -1,7 +1,12 @@
 {% extends "base.html" %}
+{% block view %}info{% endblock view %}
 
 {% block content %}
 <h2>Dump {{n}}: {{ dump.title }}</h2>
+
+{% if dump.done %}
+<a href="{{dump.download_link}}">Download</a>
+{% endif %}
 
 <table>
     <tr class="table-label">
@@ -23,12 +28,12 @@
     </tr>
     {% endif %}
 
-    {% if dump.done %}
-    <tr> 
-        <td><a href="{{dump.download_link}}">Download</a></td>
+    <tr>
+        <td>Zenodo</td>
+        <td><button class="upload" data-target="sandbox" data-dump-id="{{ dump.id }}">Upload to Sandbox</button>
+            <button class="upload" data-target="release" data-dump-id="{{ dump.id }}">Upload to Release</button>
+        </td>
     </tr>
-    {% endif %}
-
 </table>
 
 <br>

@@ -53,8 +53,12 @@ public class DumpRunner {
         return new DumpRunner(id, dumpFile, controller, propertyRegister, outputDirectory);
     }
 
+    public static Path getOutputPath(Path outputDirectory, final int id) {
+        return outputDirectory.resolve("wdump-" + id + ".nt.gz");
+    }
+
     void addDumpTask(int id, DumpSpec spec, DumpStatusHandler statusHandler) throws IOException {
-        final OutputStream output = openGzipOutput(this.outputDirectory.resolve(id + ".nt.gz"));
+        final OutputStream output = openGzipOutput(getOutputPath(this.outputDirectory, id));
 
         FilteredRdfSerializer serializer = new FilteredRdfSerializer(spec, output, controller.getSitesInformation(), propertyRegister, statusHandler);
         this.processors.add(serializer);

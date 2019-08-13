@@ -26,8 +26,6 @@ public class Zenodo {
 
         this.unirest.config()
                 .setDefaultHeader("Authorization", "Bearer " + accessToken)
-                .proxy("localhost", 8080)
-                .verifySsl(false)
                 .setObjectMapper(new JacksonObjectMapper(mapper));
     }
 
@@ -54,6 +52,7 @@ public class Zenodo {
         if (!response.isSuccess()) handleError(response);
 
         final Deposit d = response.getBody();
+
 
         d.putMetadata(title, description, Lists.newArrayList(new Deposit.Creator("Fünfstück, Benno", null)));
         return response.getBody();

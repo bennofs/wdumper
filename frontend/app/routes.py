@@ -1,7 +1,8 @@
 import json
+import requests
 from flask import render_template, request, jsonify, make_response, send_from_directory
 from app import app, db
-from app.models import Dump
+from app.models import Dump, ZenodoTarget, Zenodo
 
 import config
 
@@ -59,4 +60,39 @@ def download(id: int):
         return render_404("Dump not ready yet!")
 
     fname = "wdump-" + str(dump.id) + ".nt.gz"
-    return send_from_directory(config.DUMPS_PATH, str(dump.id) + ".nt.gz", as_attachment=True, attachment_filename=fname)
+    return send_from_directory(config.DUMPS_PATH, fname, as_attachment=True, attachment_filename=fname)
+
+@app.route("/zenodo", methods=["POST"])
+def zenodo():
+    data = request.get_json()
+    print(json.dumps(data))
+    id = data["id"]
+    dump = Dump.query.get(id)
+
+    target = ZenodoTarget.RELEASE if data["target"] == "release" else ZenodoTarget.SANDBOX
+    
+    r = requests.post(target.endpoint("deposit/depositions"), headers=target.headers(), json={})
+    r.raise_for_status()
+    record = r.json()
+
+    doi = record["metadata"]["prereserve_doi"]["doi"]
+
+    r = requests.put(target.endpoint("deposit/depositions/" + str(record["id"])), headers=target.headers(), json={
+        'metadata': {
+            'title': "Wikidata Dump " + dump.title,
+            'upload_type': 'dataset',
+            'access_right': 'open',
+            'license': 'cc-zero',
+            'description': "RDF Dump of wikidata produced with wdumper",
+            'creators': [{'name': "Benno Fünfstück"}],
+            'prereserve_doi': True,
+            'doi': doi,
+        }
+    })
+    r.raise_for_status()
+
+    zenodo = Zenodo(deposit_id=record["id"], dump_id=id, doi=doi, target=target)
+    db.session.add(zenodo)
+    db.session.commit()
+
+    return ""

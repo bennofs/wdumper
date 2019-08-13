@@ -2,9 +2,13 @@ package io.github.bennofs.wdumper.zenodo;
 
 import com.fasterxml.jackson.annotation.*;
 import com.google.common.base.MoreObjects;
+import io.github.bennofs.wdumper.processors.ProgressReporter;
+import kong.unirest.ProgressMonitor;
 import kong.unirest.UnirestInstance;
 
+import java.io.File;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -107,7 +111,7 @@ public class Deposit {
     public void discard() throws ZenodoException {
         final var response = this.unirest.post(this.links.discard)
                 .header("Content-Type", "application/json")
-                .asEmpty();
+                .asString();
         if (!response.isSuccess())
             Zenodo.handleError(response);
     }
@@ -115,7 +119,7 @@ public class Deposit {
     public void delete() throws ZenodoException {
         final var response = this.unirest.delete(this.links.self)
                 .header("Content-Type", "application/json")
-                .asEmpty();
+                .asString();
         if (!response.isSuccess())
             Zenodo.handleError(response);
     }
@@ -127,14 +131,25 @@ public class Deposit {
             Zenodo.handleError(response);
     }
 
-    public void addFile(String filename, InputStream stream) throws ZenodoException {
+    public void addFile(String filename, String value, ProgressMonitor monitor) throws ZenodoException {
         final var response = this.unirest.post(this.links.files)
-                .field("file", stream, filename)
+                .multiPartContent()
+                .field("file", value.getBytes(StandardCharsets.UTF_8), filename)
+                .uploadMonitor(monitor)
                 .asString();
         if (!response.isSuccess())
             Zenodo.handleError(response);
-
     }
+
+    public void addFile(String filename, File value, ProgressMonitor monitor) throws ZenodoException {
+        final var response = this.unirest.post(this.links.files)
+                .field("file", value, filename)
+                .uploadMonitor(monitor)
+                .asString();
+        if (!response.isSuccess())
+            Zenodo.handleError(response);
+    }
+
 
     public void putMetadata(String title, String description, List<Creator> creators) throws ZenodoException {
         final var response = this.unirest.put(this.links.self)

@@ -62,18 +62,47 @@ class DumpCreator {
     }
 }
 
-const initSpec: m.DumpSpec = {
-    entities: {},
-    statements: {},
+function mountCreate() {
+    const initSpec: m.DumpSpec = {
+        entities: {},
+        statements: {},
 
-    labels: true,
-    descriptions: true,
-    aliases: true,
-    truthy: false,
-    meta: true,
-    sitelinks: true
-};
+        labels: true,
+        descriptions: true,
+        aliases: true,
+        truthy: false,
+        meta: true,
+        sitelinks: true
+    };
+
+    const dumpCreator = new DumpCreator(mainEl, initSpec);
+    window['dumpCreator'] = dumpCreator
+}
+
+function mountInfo() {
+    document.querySelectorAll("button.upload").forEach((button: HTMLElement) => {
+        button.addEventListener("click", () => {
+            const body = {
+                id: button.dataset["dumpId"],
+                target: button.dataset["target"]
+            };
+            fetch("/zenodo", {
+                method: "POST",
+                body: JSON.stringify(body),
+                headers: {"Content-Type": "application/json" }
+            })
+        });
+    });
+}
+
+const views = {
+    "create": mountCreate,
+    "info": mountInfo
+}
 
 const mainEl = document.getElementById("main");
-const dumpCreator = new DumpCreator(mainEl, initSpec);
-window['dumpCreator'] = dumpCreator
+if (mainEl && mainEl.dataset["view"]) {
+    const controller = views[mainEl.dataset["view"]];
+    controller();
+}
+
