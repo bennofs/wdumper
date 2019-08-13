@@ -30,8 +30,17 @@
 
     <tr>
         <td>Zenodo</td>
-        <td><button class="upload" data-target="sandbox" data-dump-id="{{ dump.id }}">Upload to Sandbox</button>
+        <td>
+            {% if dump.zenodo_sandbox %}
+            Sandbox DOI: <a href="https://sandbox.zenodo.org/record/{{dump.zenodo_sandbox.deposit_id}}">{{dump.zenodo_sandbox.doi}}</a>
+            {% else %}
+            <button class="upload" data-target="sandbox" data-dump-id="{{ dump.id }}">Upload to Sandbox</button>
+            {% endif %}
+            {% if dump.zenodo_release %}
+            DOI: <a href="https://doi.org/{{dump.zenodo_release.doi}}">{{dump.zenodo_release.doi}}</a>
+            {% else %}
             <button class="upload" data-target="release" data-dump-id="{{ dump.id }}">Upload to Release</button>
+            {% endif %}
         </td>
     </tr>
 </table>

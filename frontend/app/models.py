@@ -1,7 +1,7 @@
 import enum
 from flask import url_for
 from datetime import datetime
-from sqlalchemy.sql import func
+from sqlalchemy.sql import func, and_
 
 from app import db
 import config
@@ -41,6 +41,8 @@ class Dump(db.Model):
     entity_count = db.Column(db.Integer, server_default=db.text("0"), nullable=False)
 
     run = db.relationship("Run")
+    zenodo_sandbox = db.relationship("Zenodo", primaryjoin='and_(Dump.id == Zenodo.dump_id, Zenodo.target=="SANDBOX")', uselist=False)
+    zenodo_release = db.relationship("Zenodo", primaryjoin='and_(Dump.id == Zenodo.dump_id, Zenodo.target=="RELEASE")', uselist=False)
 
     @property
     def done(self):
@@ -49,6 +51,9 @@ class Dump(db.Model):
     @property
     def download_link(self):
         return url_for('download', id=self.id)
+
+    def has_zenodo(self, target):
+        return Zenodo.query.filter_by(dump_id=self.id, target=target).limit(1).count() > 0
 
 
 class Zenodo(db.Model):

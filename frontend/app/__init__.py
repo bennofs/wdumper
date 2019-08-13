@@ -29,4 +29,8 @@ migrate = Migrate(app, db, compare_type=True)
 
 from app import routes, models
 
+@app.shell_context_processor
+def make_shell_context():
+    return {'db': db, 'm': models}
+
 
