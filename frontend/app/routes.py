@@ -1,6 +1,6 @@
 import json
 import requests
-from flask import render_template, request, jsonify, make_response, send_from_directory
+from flask import render_template, request, jsonify, make_response, send_from_directory, url_for
 from app import app, db
 from app.models import Dump, ZenodoTarget, Zenodo
 
@@ -48,7 +48,7 @@ def create():
     db.session.commit()
 
     return jsonify({
-        "url": "/dump/{}".format(dump.id)
+        "url": url_for('dump', n=dump.id)
     })
 
 @app.route("/download/<int:id>", methods=["GET"])
