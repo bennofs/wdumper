@@ -373,7 +373,7 @@ public class App implements Runnable, Closeable {
         final String dbUser = ObjectUtils.defaultIfNull(System.getenv("DB_USER"), "root");
         final String dbPassword = ObjectUtils.defaultIfNull(System.getenv("DB_PASSWORD"), "");
 
-        final String dbUri = "jdbc:mysql://" + dbHost + "/" + dbName + "?user=" + dbUser + "&password=" + dbPassword;
+        final String dbUri = "jdbc:mysql://" + dbHost + "/" + dbName + "?sslMode=DISABLED&user=" + dbUser + "&password=" + dbPassword;
         final String zenodoToken = System.getenv("ZENODO_TOKEN");
         final String zenodoSandboxToken = System.getenv("ZENODO_SANDBOX_TOKEN");
 

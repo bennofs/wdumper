@@ -49,7 +49,7 @@ class DumpCreator {
             statements: Object.values(this.model.statements),
         };
 
-        fetch("/create", {
+        fetch(ROOT + "create", {
             method: "POST",
             body: JSON.stringify({
                 spec: data,
@@ -86,7 +86,7 @@ function mountInfo() {
                 id: button.dataset["dumpId"],
                 target: button.dataset["target"]
             };
-            fetch("/zenodo", {
+            fetch(ROOT + "zenodo", {
                 method: "POST",
                 body: JSON.stringify(body),
                 headers: {"Content-Type": "application/json" }
@@ -105,4 +105,3 @@ if (mainEl && mainEl.dataset["view"]) {
     const controller = views[mainEl.dataset["view"]];
     controller();
 }
-

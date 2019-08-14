@@ -6,6 +6,7 @@
 
         <script defer type="text/javascript">
          var ICONS_URL = '{{ url_for("static", filename="icons/") }}';
+         var ROOT = '{{url_for('index')}}';
         </script>
         <script defer src="{{ url_for('static', filename='langcodes.js') }}"></script>
         <script defer src="{{ url_for('static', filename='main.js') }}"></script>
