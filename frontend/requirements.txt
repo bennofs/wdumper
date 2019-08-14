@@ -10,7 +10,6 @@ itsdangerous==1.1.0
 Jinja2==2.10.1
 Mako==1.0.12
 MarkupSafe==1.1.1
-mysql-connector-python==8.0.16
 mysqlclient==1.4.4
 protobuf==3.8.0
 python-dateutil==2.8.0
