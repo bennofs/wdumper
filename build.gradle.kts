@@ -5,7 +5,6 @@
  * For more details take a look at the Java Quickstart chapter in the Gradle
  * User Manual available at https://docs.gradle.org/5.4.1-20190522110022+0000/userguide/tutorial_java_projects.html
  */
-
 plugins {
     // Apply the java plugin to add support for Java
     java
@@ -15,6 +14,9 @@ plugins {
 
     id("com.github.johnrengelman.shadow").version("5.0.0")
 }
+
+java.sourceCompatibility = JavaVersion.VERSION_1_8
+java.targetCompatibility = JavaVersion.VERSION_1_8
 
 repositories {
     // Use jcenter for resolving your dependencies.

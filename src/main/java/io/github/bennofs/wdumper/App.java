@@ -367,10 +367,13 @@ public class App implements Runnable, Closeable {
     }
 
 
-    static final private String DATABASE_URI_DEFAULT = "jdbc:mysql://localhost/wdumper?user=root&password=";
-
     public static void main(String[] args) throws IOException {
-        final String dbUri = ObjectUtils.defaultIfNull(System.getenv("DATABASE_URI"), DATABASE_URI_DEFAULT);
+        final String dbHost = ObjectUtils.defaultIfNull(System.getenv("DB_HOST"), "localhost");
+        final String dbName = ObjectUtils.defaultIfNull(System.getenv("DB_NAME"), "wdumper");
+        final String dbUser = ObjectUtils.defaultIfNull(System.getenv("DB_USER"), "root");
+        final String dbPassword = ObjectUtils.defaultIfNull(System.getenv("DB_PASSWORD"), "");
+
+        final String dbUri = "jdbc:mysql://" + dbHost + "/" + dbName + "?user=" + dbUser + "&password=" + dbPassword;
         final String zenodoToken = System.getenv("ZENODO_TOKEN");
         final String zenodoSandboxToken = System.getenv("ZENODO_SANDBOX_TOKEN");
 

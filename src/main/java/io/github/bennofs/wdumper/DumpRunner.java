@@ -41,7 +41,7 @@ public class DumpRunner {
         this.controller = controller;
         this.propertyRegister = propertyRegister;
 
-        this.processors = new ArrayList<>();
+        this.processors = new ArrayList<EntityDocumentDumpProcessor>();
 
         this.outputDirectory = outputDirectory;
     }

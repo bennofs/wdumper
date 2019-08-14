@@ -3,6 +3,7 @@ package io.github.bennofs.wdumper.zenodo;
 import com.fasterxml.jackson.annotation.*;
 import com.google.common.base.MoreObjects;
 import io.github.bennofs.wdumper.processors.ProgressReporter;
+import kong.unirest.HttpResponse;
 import kong.unirest.ProgressMonitor;
 import kong.unirest.UnirestInstance;
 
@@ -109,7 +110,7 @@ public class Deposit {
     }
 
     public void discard() throws ZenodoException {
-        final var response = this.unirest.post(this.links.discard)
+        final HttpResponse<String> response = this.unirest.post(this.links.discard)
                 .header("Content-Type", "application/json")
                 .asString();
         if (!response.isSuccess())
@@ -117,7 +118,7 @@ public class Deposit {
     }
 
     public void delete() throws ZenodoException {
-        final var response = this.unirest.delete(this.links.self)
+        final HttpResponse<String> response = this.unirest.delete(this.links.self)
                 .header("Content-Type", "application/json")
                 .asString();
         if (!response.isSuccess())
@@ -126,13 +127,13 @@ public class Deposit {
 
 
     public void publish() throws ZenodoException {
-        final var response = this.unirest.post(this.links.publish).asString();
+        final HttpResponse<String> response = this.unirest.post(this.links.publish).asString();
         if (!response.isSuccess())
             Zenodo.handleError(response);
     }
 
     public void addFile(String filename, String value, ProgressMonitor monitor) throws ZenodoException {
-        final var response = this.unirest.post(this.links.files)
+        final HttpResponse<String> response = this.unirest.post(this.links.files)
                 .multiPartContent()
                 .field("file", value.getBytes(StandardCharsets.UTF_8), filename)
                 .uploadMonitor(monitor)
@@ -142,7 +143,7 @@ public class Deposit {
     }
 
     public void addFile(String filename, File value, ProgressMonitor monitor) throws ZenodoException {
-        final var response = this.unirest.post(this.links.files)
+        final HttpResponse<String> response = this.unirest.post(this.links.files)
                 .field("file", value, filename)
                 .uploadMonitor(monitor)
                 .asString();
@@ -152,7 +153,7 @@ public class Deposit {
 
 
     public void putMetadata(String title, String description, List<Creator> creators) throws ZenodoException {
-        final var response = this.unirest.put(this.links.self)
+        final HttpResponse<String> response = this.unirest.put(this.links.self)
                 .header("Content-Type", "application/json")
                 .body(Map.of("metadata", Map.of(
                         "title", title,

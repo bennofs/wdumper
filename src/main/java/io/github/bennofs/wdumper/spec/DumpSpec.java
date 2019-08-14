@@ -51,7 +51,7 @@ public class DumpSpec {
         this.meta = meta;
         this.sitelinks = sitelinks;
 
-        this.statementOptions = new HashMap<>();
+        this.statementOptions = new HashMap<String, StatementOptions>();
         this.statementOptionsAll = new StatementOptions();
         for (StatementFilter statementFilter : statements) {
             if (statementFilter.getProperties() == null) {

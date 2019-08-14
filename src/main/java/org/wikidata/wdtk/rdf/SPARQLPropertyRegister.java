@@ -2,6 +2,8 @@ package org.wikidata.wdtk.rdf;
 
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.query.BindingSet;
+import org.eclipse.rdf4j.query.TupleQuery;
+import org.eclipse.rdf4j.query.TupleQueryResult;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.sparql.SPARQLRepository;
 import org.wikidata.wdtk.datamodel.helpers.Datamodel;
@@ -37,12 +39,12 @@ public class SPARQLPropertyRegister extends PropertyRegister {
         repository.initialize();
         final RepositoryConnection connection = repository.getConnection();
 
-        var query = connection.prepareTupleQuery("SELECT ?prop ?type WHERE { ?prop wikibase:propertyType ?type }");
+        TupleQuery query = connection.prepareTupleQuery("SELECT ?prop ?type WHERE { ?prop wikibase:propertyType ?type }");
         final PropertyRegister propertyRegister = new SPARQLPropertyRegister(
                 "P1921",
                 ApiConnection.getWikidataApiConnection(),
                 Datamodel.SITE_WIKIDATA);
-        try (final var result = query.evaluate()) {
+        try (final TupleQueryResult result = query.evaluate()) {
             while (result.hasNext()) {
                 final BindingSet solution = result.next();
                 final IRI property = (IRI) solution.getValue("prop");

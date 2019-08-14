@@ -44,7 +44,7 @@ public class ValueFilter implements SnakVisitor<Boolean> {
         if (this.type != ValueFilterType.ENTITYID) return false;
 
         final Value foundValue = snak.getValue();
-        return foundValue.accept(new ValueVisitor<>() {
+        return foundValue.accept(new ValueVisitor<Boolean>() {
             @Override
             public Boolean visit(EntityIdValue value) {
                 final String id = value.getId();

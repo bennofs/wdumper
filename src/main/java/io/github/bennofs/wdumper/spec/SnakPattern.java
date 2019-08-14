@@ -26,7 +26,7 @@ public class SnakPattern {
             final PropertyIdValue propertyId = pattern.getPropertyId();
             final StatementGroup sg = doc.findStatementGroup(propertyId.getId());
 
-            return pattern.accept(new SnakVisitor<>() {
+            return pattern.accept(new SnakVisitor<Boolean>() {
                 @Override
                 public Boolean visit(ValueSnak snak) {
                     if (sg == null || sg.size() == 0) return false;
