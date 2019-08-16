@@ -8,6 +8,8 @@ import io.github.bennofs.wdumper.spec.DumpSpec;
 import picocli.CommandLine;
 
 import java.io.IOException;
+import java.net.URI;
+import java.nio.file.FileSystems;
 import java.nio.file.Path;
 
 public class CliRunner implements Runnable {
@@ -19,7 +21,7 @@ public class CliRunner implements Runnable {
 
     @Override
     public void run() {
-        final DumpRunner runner = DumpRunner.create(1, new ZstdDumpFile(dumpFilePath.toString()), Path.of("."));
+        final DumpRunner runner = DumpRunner.create(1, new ZstdDumpFile(dumpFilePath.toString()), FileSystems.getDefault().getPath("."));
 
         try {
             final ObjectMapper mapper = new ObjectMapper();
