@@ -49,9 +49,9 @@ public class SPARQLPropertyRegister extends PropertyRegister {
                 final BindingSet solution = result.next();
                 final IRI property = (IRI) solution.getValue("prop");
                 final IRI propType = (IRI) solution.getValue("type");
-                // I do not know why this happens, but on 2019-08-16, wikidata query service returns *items* that
-                // have a property type ???
-                // let's skip them, since that makes no sense
+
+                // some items got swapped with properties, https://phabricator.wikimedia.org/T230588
+                // skip them, since that's bogus
                 if (property.getLocalName().startsWith("Q")) continue;
 
                 final PropertyIdValue propId = new PropertyIdValueImpl(property.getLocalName(), SITE_WIKIDATA);
