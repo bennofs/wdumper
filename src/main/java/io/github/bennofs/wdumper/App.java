@@ -22,6 +22,7 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.sql.SQLException;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -273,9 +274,11 @@ public class App implements Runnable, Closeable {
                         System.out.println(deposit.toString());
                         Thread.sleep(1000);
 
-                        final String dumpSpec = jdbi.withHandle(handle -> getDumpSpec(handle, task.dump_id));
-                        deposit.addFile("wdumper-spec.json", dumpSpec, (field, fileName, bytesWritten, totalBytes) -> {
-                        });
+                        if (Arrays.stream(deposit.getFiles()).noneMatch(file -> file.filename.equals("wdumper-spec.json"))) {
+                            final String dumpSpec = jdbi.withHandle(handle -> getDumpSpec(handle, task.dump_id));
+                            deposit.addFile("wdumper-spec.json", dumpSpec, (field, fileName, bytesWritten, totalBytes) -> {
+                            });
+                        }
 
                         try (final UploadProgressMonitor progress = new UploadProgressMonitor(jdbi, task.id)) {
                             deposit.addFile(outputPath.getFileName().toString(), outputPath.toFile(), progress);

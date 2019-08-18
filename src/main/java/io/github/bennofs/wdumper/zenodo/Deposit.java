@@ -3,22 +3,18 @@ package io.github.bennofs.wdumper.zenodo;
 import com.fasterxml.jackson.annotation.*;
 import com.google.common.base.MoreObjects;
 import io.github.bennofs.wdumper.ext.ProgressHttpEntityWrapper;
-import io.github.bennofs.wdumper.processors.ProgressReporter;
 import kong.unirest.HttpResponse;
 import kong.unirest.ProgressMonitor;
 import kong.unirest.UnirestInstance;
 import org.apache.commons.io.IOUtils;
-import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpPut;
 import org.apache.http.entity.FileEntity;
-import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.message.BasicHeader;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
@@ -61,6 +57,50 @@ public class Deposit {
 
             this.name = name;
             this.affiliation = affiliation;
+        }
+    }
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public static class FileLinks {
+        public final String download;
+        public final String self;
+
+        @JsonCreator
+        public FileLinks(
+                @JsonProperty("download") String download,
+                @JsonProperty("self") String self
+        ) {
+            this.download = download;
+            this.self = self;
+        }
+    }
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public static class DepositFile {
+        public final String filename;
+        public final String checksum;
+        public final String id;
+        public final FileLinks links;
+
+        public DepositFile(
+                @JsonProperty("filename") String filename,
+                @JsonProperty("checksum") String checksum,
+                @JsonProperty("id") String id,
+                @JsonProperty("links") FileLinks links
+        ) {
+            this.filename = filename;
+            this.checksum = checksum;
+            this.id = id;
+            this.links = links;
+        }
+
+        @Override
+        public String toString() {
+            return MoreObjects.toStringHelper(this)
+                    .add("filename", filename)
+                    .add("checksum", checksum)
+                    .add("id", id)
+                    .toString();
         }
     }
 
@@ -194,6 +234,15 @@ public class Deposit {
 
         if (!response.isSuccess())
             Zenodo.handleError(response);
+    }
+
+    public DepositFile[] getFiles() throws ZenodoException {
+        final HttpResponse<DepositFile[]> response = this.unirest.get(this.links.files)
+                .asObject(DepositFile[].class);
+        if (!response.isSuccess())
+            Zenodo.handleError(response);
+
+        return response.getBody();
     }
 
     @Override
