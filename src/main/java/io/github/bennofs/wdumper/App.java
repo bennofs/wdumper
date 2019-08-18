@@ -221,7 +221,12 @@ public class App implements Runnable, Closeable {
             this.timer.scheduleAtFixedRate(new TimerTask() {
                 @Override
                 public void run() {
-                    jdbi.useHandle(handle -> setUploadProgress(handle, id, progress));
+                    try {
+                        jdbi.useHandle(handle -> setUploadProgress(handle, id, progress));
+                    } catch(Exception e) {
+                        System.out.println("error while updating upload progress, ignored");
+                        e.printStackTrace();
+                    }
                 }
             }, 0, 1000 * 20);
         }
