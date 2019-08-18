@@ -67,7 +67,7 @@ class Zenodo(db.Model):
     started_at = db.Column(db.TIMESTAMP, nullable=True)
     completed_at = db.Column(db.TIMESTAMP, nullable=True)
 
-    uploaded_bytes = db.Column(db.Integer, nullable=False, server_default=db.text("0"))
+    uploaded_bytes = db.Column(db.BigInteger, nullable=False, server_default=db.text("0"))
 
 class Run(db.Model):
     id = db.Column(db.Integer, primary_key = True, nullable=False)
