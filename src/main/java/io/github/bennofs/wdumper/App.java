@@ -269,14 +269,10 @@ public class App implements Runnable, Closeable {
                         Thread.sleep(1000);
 
                         final String dumpSpec = jdbi.withHandle(handle -> getDumpSpec(handle, task.dump_id));
-                        deposit.addFile("wdumper-spec.json", dumpSpec, new ProgressMonitor() {
-                            @Override
-                            public void accept(String field, String fileName, Long bytesWritten, Long totalBytes) {
-
-                            }
+                        deposit.addFile("wdumper-spec.json", dumpSpec, (field, fileName, bytesWritten, totalBytes) -> {
                         });
 
-                        try (final UploadProgressMonitor progress = new UploadProgressMonitor(jdbi, task.deposit_id)) {
+                        try (final UploadProgressMonitor progress = new UploadProgressMonitor(jdbi, task.id)) {
                             deposit.addFile(outputPath.getFileName().toString(), outputPath.toFile(), progress);
                         }
                         deposit.publish();

@@ -59,6 +59,7 @@ dependencies {
     // HTTP rest client
     implementation("com.konghq:unirest-java:2.3.08")
     implementation("com.konghq:unirest-objectmapper-jackson:2.3.08")
+    implementation("org.apache.httpcomponents:httpclient:4.5.9")
 
     // Use JUnit test framework
     testImplementation("junit:junit:4.12")

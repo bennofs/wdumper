@@ -2,17 +2,28 @@ package io.github.bennofs.wdumper.zenodo;
 
 import com.fasterxml.jackson.annotation.*;
 import com.google.common.base.MoreObjects;
+import io.github.bennofs.wdumper.ext.ProgressHttpEntityWrapper;
 import io.github.bennofs.wdumper.processors.ProgressReporter;
 import kong.unirest.HttpResponse;
 import kong.unirest.ProgressMonitor;
 import kong.unirest.UnirestInstance;
+import org.apache.commons.io.IOUtils;
+import org.apache.http.client.ClientProtocolException;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpPut;
+import org.apache.http.entity.FileEntity;
+import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.http.message.BasicHeader;
 
 import java.io.File;
+import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -143,12 +154,26 @@ public class Deposit {
     }
 
     public void addFile(String filename, File value, ProgressMonitor monitor) throws ZenodoException {
-        final HttpResponse<String> response = this.unirest.post(this.links.files)
-                .field("file", value, filename)
-                .uploadMonitor(monitor)
-                .asString();
-        if (!response.isSuccess())
-            Zenodo.handleError(response);
+        final HttpClient client = HttpClientBuilder.create()
+                .setDefaultHeaders(this.unirest.config().getDefaultHeaders().all().stream()
+                        .map(header -> new BasicHeader(header.getName(), header.getValue()))
+                        .collect(Collectors.toList())
+                )
+                .build();
+        final HttpPut request = new HttpPut(this.links.bucket + "/" + value.getName());
+        request.setHeader("Content-Type", "application/octet-stream");
+        request.setEntity(new ProgressHttpEntityWrapper(new FileEntity(value), monitor));
+
+        try {
+            final org.apache.http.HttpResponse response = client.execute(request);
+            if (response.getStatusLine().getStatusCode() / 100 != 2) {
+                String message = "http request for upload failed: status code " + response.getStatusLine().getStatusCode();
+                message += ", message: " + IOUtils.toString(response.getEntity().getContent());
+                throw new ZenodoException(message);
+            }
+        } catch(IOException e) {
+            throw new ZenodoException("http request for upload failed: " + e.toString());
+        }
     }
 
 
