@@ -43,4 +43,8 @@ public class StatementOptions {
                 this.qualifiers || other.qualifiers
         );
     }
+
+    public boolean isStatement() {
+        return this.full || this.references || this.qualifiers;
+    }
 }

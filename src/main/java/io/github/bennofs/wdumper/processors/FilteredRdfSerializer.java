@@ -238,20 +238,7 @@ public class FilteredRdfSerializer implements EntityDocumentDumpProcessor {
         for (StatementGroup statementGroup : statementDocument
                 .getStatementGroups()) {
             final StatementOptions options = spec.findStatementOptions(statementGroup.getProperty().getId());
-            if (options == null || (!options.isFull() && !options.isQualifiers() && !options.isReferences())) continue;
-
-            IRI property = this.rdfWriter.getUri(Vocabulary.getPropertyUri(
-                    statementGroup.getProperty(), PropertyContext.STATEMENT));
-            for (Statement statement : statementGroup) {
-                this.rdfWriter.writeTripleUriObject(subject, property,
-                        Vocabulary.getStatementUri(statement));
-            }
-        }
-
-        for (StatementGroup statementGroup : statementDocument
-                .getStatementGroups()) {
-            final StatementOptions options = spec.findStatementOptions(statementGroup.getProperty().getId());
-            if (options == null || !options.isFull()) continue;
+            if (options == null) continue;
 
             if (truthy) {
                 statementGroup = statementGroup.getBestStatements();
@@ -259,15 +246,12 @@ public class FilteredRdfSerializer implements EntityDocumentDumpProcessor {
             }
 
             for (Statement statement : statementGroup) {
-                if (statement.getQualifiers().size() == 0) {
-                    this.snakRdfConverter.setSnakContext(subject,
-                            PropertyContext.DIRECT);
-                    statement.getMainSnak()
-                            .accept(this.snakRdfConverter);
-                }
                 writeStatement(subject, statement, options);
             }
-            writeBestRankTriples();
+
+            if (options.isStatement()) {
+                writeBestRankTriples();
+            }
         }
     }
 
@@ -336,7 +320,14 @@ public class FilteredRdfSerializer implements EntityDocumentDumpProcessor {
         String statementUri = Vocabulary.getStatementUri(statement);
         Resource statementResource = this.rdfWriter.getUri(statementUri);
 
-        if (this.spec.isMeta()) {
+        if (options.isStatement()) {
+            IRI property = this.rdfWriter.getUri(Vocabulary.getPropertyUri(
+                    statement.getMainSnak().getPropertyId(), PropertyContext.STATEMENT));
+            this.rdfWriter.writeTripleUriObject(subject, property,
+                    Vocabulary.getStatementUri(statement));
+        }
+
+        if (this.spec.isMeta() && options.isStatement()) {
             this.rdfWriter.writeTripleValueObject(statementResource,
                     RdfWriter.RDF_TYPE, RdfWriter.WB_STATEMENT);
         }
@@ -356,7 +347,6 @@ public class FilteredRdfSerializer implements EntityDocumentDumpProcessor {
             writeStatementRankTriple(statementResource, statement.getRank());
         }
     }
-
 
     void writeSimpleStatement(Resource subject, Statement statement) {
         if (statement.getQualifiers().size() == 0) {
