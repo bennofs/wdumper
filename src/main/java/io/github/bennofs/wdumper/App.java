@@ -56,10 +56,13 @@ public class App implements Runnable, Closeable {
     private static final int UPLOAD_INTERVAL_MILLIS = 10000;
 
     // time to wait between checks for new dump tasks
-    private static final int DUMP_INTERVAL_MILLIS = 5 * 60 * 1000;
+    private static final int DUMP_INTERVAL_MILLIS = 10 * 60 * 1000;
 
-    // unique ID for this worker
-    private static final int WORKER_ID = 1;
+    // only process dump tasks at least this old
+    private static final int RECENT_MIN_MINUTES = 20;
+
+    // only process dump tasks at least this new
+    private static final int RECENT_MAX_MINUTES = 60;
 
     @CommandLine.Parameters(paramLabel = "DUMP", arity = "1", index = "0", description = "JSON dump from wikidata to process")
     private Path dumpFilePath;
@@ -101,8 +104,11 @@ public class App implements Runnable, Closeable {
 
     private boolean claimDumps(Handle handle, int runId) {
         return handle
-                .createUpdate("UPDATE dump SET run_id = :run WHERE run_id IS NULL")
+                .createUpdate("UPDATE dump SET run_id = :run WHERE run_id IS NULL " +
+                        "AND (SELECT (MAX(created_at) < DATE_SUB(NOW(), INTERVAL :recent_min MINUTE)) OR (MIN(created_at) > DATE_SUB(NOW(), INTERVAL :recent_max MINUTE)))")
                 .bind("run", runId)
+                .bind("recent_min", RECENT_MIN_MINUTES)
+                .bind("recent_max", RECENT_MAX_MINUTES)
                 .execute() != 0;
     }
 
