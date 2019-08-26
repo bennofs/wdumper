@@ -39,16 +39,33 @@
             <td>Sandbox</td>
             <td>
                 {% if dump.zenodo_sandbox %}
+                {% if not dump.done %}
+                upload will start after dump has finished
+                {% elif not dump.zenodo_sandbox.started_at %}
+                upload queued since {{ dump.zenodo_sandbox.created_at|timedelta }}
+                {% elif not dump.zenodo_sandbox.finished_at %}
+                upload in progress ({{ dump.zenodo_sandbox.uploaded_bytes}} bytes already uploaded)
+                {% else %}
                 <a href="https://sandbox.zenodo.org/record/{{dump.zenodo_sandbox.deposit_id}}">{{dump.zenodo_sandbox.doi}}</a>
+                {% endif %}
                 {% else %}
                 <button class="upload" data-target="sandbox" data-dump-id="{{ dump.id }}">Upload to Sandbox</button>
                 {% endif %}
+            </td>
         </tr>
         <tr>
             <td>Main</td>
             <td>
                 {% if dump.zenodo_release %}
+                {% if not dump.done %}
+                upload will start after dump has finished
+                {% elif not dump.zenodo_release.started_at %}
+                upload queued since {{ dump.zenodo_release.created_at|timedelta }}
+                {% elif not dump.zenodo_release.finished_at %}
+                upload in progress ({{ dump.zenodo_release.uploaded_bytes}} bytes already uploaded)
+                {% else %}
                 <a href="https://doi.org/{{dump.zenodo_release.doi}}">{{dump.zenodo_release.doi}}</a>
+                {% endif %}
                 {% else %}
                 <button class="upload" data-target="release" data-dump-id="{{ dump.id }}">Upload to Release</button>
                 {% endif %}
