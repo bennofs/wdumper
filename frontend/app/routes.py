@@ -3,6 +3,7 @@ import requests
 from flask import render_template, request, jsonify, make_response, send_from_directory, url_for
 from app import app, db
 from app.models import Dump, ZenodoTarget, Zenodo
+from datetime import datetime
 
 import config
 
@@ -96,3 +97,25 @@ def zenodo():
     db.session.commit()
 
     return ""
+
+@app.template_filter("timedelta")
+def timedelta(delta):
+    if isinstance(delta, datetime):
+        delta = datetime.utcnow() - delta
+    
+    if delta.days:
+        return "{}d{}h".format(delta.days, delta.seconds // (60**2))
+
+    minutes = delta.seconds // 60
+    seconds = delta.seconds - minutes * 60
+
+    hours = minutes // 60
+    minutes = minutes - hours * 60
+
+    if hours:
+        return "{}h:{:02}m".format(hours, minutes)
+
+    if minutes:
+        return "{}m:{:02}s".format(minutes, seconds)
+
+    return "{:02} secs".format(seconds)

@@ -68,6 +68,10 @@ h2 {
     font-size: 1.3rem;
 }
 
+.intro {
+    margin-bottom: 1.5rem;
+}
+
 /* structure elements */
 .card {
     border: @border-base;
@@ -319,6 +323,21 @@ button.submit {
     }
 }
 
+.progress {
+    width: 20rem;
+    display: inline-block;
+    border: @border-base;
+    margin-left: 1rem;
+    margin-right: 1rem;
+    display: inline-flex;
+
+    .progress-bar {
+        display: inline-block;
+        background-color: @wmui-color-green30;
+        height: 0.7em; 
+    }
+}
+
 /* special styles */
 .hide {
     display: none;
@@ -333,7 +352,7 @@ button.submit {
 }
 
 td {
-    padding: 1rem 1rem 0rem 0rem;
+    padding: 0rem 1rem 0.7rem 0rem;
 }
 
 /* temporary rules for experiments */

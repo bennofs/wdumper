@@ -1,6 +1,6 @@
 import enum
 from flask import url_for
-from datetime import datetime
+from datetime import datetime, timedelta
 from sqlalchemy.sql import func, and_
 
 from app import db
@@ -74,6 +74,25 @@ class Run(db.Model):
     started_at = db.Column(db.TIMESTAMP, nullable=True)
     finished_at = db.Column(db.TIMESTAMP, nullable=True)
     count = db.Column(db.Integer, nullable=False, server_default=db.text("0"))
+
+    @property
+    def estimated_factor(self):
+        expected_count = Run.query.filter(
+            Run.finished_at != None
+        ).order_by(Run.finished_at.desc()).limit(1).one().count
+        return self.count / expected_count
+
+    @property
+    def estimated_percentage(self):
+        return int(self.estimated_factor * 100)
+
+    @property
+    def estimated_remaining(self):
+        current_seconds = (datetime.utcnow() - self.started_at).total_seconds()
+        if self.estimated_factor == 0:
+            r = Run.query.filter(Run.finished_at != None).order_by(Run.finished_at.desc()).limit(1).one()
+            return r.finished_at - r.started_at
+        return timedelta(seconds=current_seconds / self.estimated_factor - current_seconds)
 
 
 class DumpError(db.Model):

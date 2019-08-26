@@ -12,7 +12,7 @@
     </tr>
 {% for dump in dumps.items %}
     <tr>
-        <td><a href="{{ url_for('dump', n=dump.id) }}">{{ dump.title }}</a></td>
+        <td><a href="{{ url_for('dump', n=dump.id) }}">{{ dump.title or "unnamed" }}</a></td>
         <td>{{ dump.created_at }}</td>
         {% if dump.done %}
         <td>at {{dump.run.finished_at}}</td>

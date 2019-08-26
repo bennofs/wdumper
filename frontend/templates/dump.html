@@ -2,59 +2,95 @@
 {% block view %}info{% endblock view %}
 
 {% block content %}
-<h2>Dump {{n}}: {{ dump.title }}</h2>
+<h2>Dump {{n}}: {{ dump.title or "unnamed"}}</h2>
 
+<div class="intro">
 {% if dump.done %}
-<a href="{{dump.download_link}}">Download</a>
+    <p>
+        <a href="{{dump.download_link}}" class="link-button">
+            <img src="{{ url_for('static', filename="icons/download.svg") }}">
+            download
+        </a>
+
+    </p>
+{% elif not dump.run or not dump.run.started_at %}
+    <p>
+        queued since {{dump.created_at|timedelta}}
+    </p>
+{% else %}
+    <p>
+        processing for {{dump.run.started_at|timedelta}}
+        <span class="progress">
+            <span class="progress-bar" style="width: {{dump.run.estimated_percentage}}%;"></span>
+        </span> remaining: ~{{dump.run.estimated_remaining|timedelta}}
+    </p>
 {% endif %}
-
-<table>
-    <tr class="table-label">
-        <td>Created at</td>
-        <td>{{ dump.created_at }} </td>
-    </tr>
-    {% if dump.run %}
-    <tr>
-        <td>Processing started at</td>
-        <td>{{ dump.run.started_at }} </td>
-    </tr>
-    <tr>
-        <td>Processing finished at</td>
-        <td>{{ dump.run.finished_at }} </td>
-    </tr>
-    <tr>
-        <td>Progress (processed items)</td>
-        <td>{{ dump.run.count }}</td>
-    </tr>
-    {% endif %}
-
-    <tr>
-        <td>Zenodo</td>
-        <td>
-            {% if dump.zenodo_sandbox %}
-            Sandbox DOI: <a href="https://sandbox.zenodo.org/record/{{dump.zenodo_sandbox.deposit_id}}">{{dump.zenodo_sandbox.doi}}</a>
-            {% else %}
-            <button class="upload" data-target="sandbox" data-dump-id="{{ dump.id }}">Upload to Sandbox</button>
-            {% endif %}
-            {% if dump.zenodo_release %}
-            DOI: <a href="https://doi.org/{{dump.zenodo_release.doi}}">{{dump.zenodo_release.doi}}</a>
-            {% else %}
-            <button class="upload" data-target="release" data-dump-id="{{ dump.id }}">Upload to Release</button>
-            {% endif %}
-        </td>
-    </tr>
-</table>
-
-<br>
-
-<h3>Spec</h3>
+{% if dump.state != "completed" %}
 <p>
-    <code>
-    <pre>
-{{json.dumps(json.loads(dump.spec), indent=2)}}
-    </pre>
-    </code>
+    {{dump.state}}
 </p>
+{% endif %}
+</div>
+
+<div class="section">
+    <h2>Zenodo</h2>
+    <table>
+        <tr>
+            <td>Sandbox</td>
+            <td>
+                {% if dump.zenodo_sandbox %}
+                <a href="https://sandbox.zenodo.org/record/{{dump.zenodo_sandbox.deposit_id}}">{{dump.zenodo_sandbox.doi}}</a>
+                {% else %}
+                <button class="upload" data-target="sandbox" data-dump-id="{{ dump.id }}">Upload to Sandbox</button>
+                {% endif %}
+        </tr>
+        <tr>
+            <td>Main</td>
+            <td>
+                {% if dump.zenodo_release %}
+                <a href="https://doi.org/{{dump.zenodo_release.doi}}">{{dump.zenodo_release.doi}}</a>
+                {% else %}
+                <button class="upload" data-target="release" data-dump-id="{{ dump.id }}">Upload to Release</button>
+                {% endif %}
+            </td>
+        </tr>
+    </table>
+</div>
+
+<div class="section">
+    <h2>Timings</h2>
+    <table>
+        <tr>
+            <td>Created at</td>
+            <td>{{ dump.created_at }} </td>
+        </tr>
+        {% if dump.run %}
+        <tr>
+            <td>Processing started at</td>
+            <td>{{ dump.run.started_at }} </td>
+        </tr>
+        <tr>
+            <td>Processing finished at</td>
+            <td>{{ dump.run.finished_at }} </td>
+        </tr>
+        <tr>
+            <td>Processed items</td>
+            <td>{{ dump.run.count }} </td>
+        </tr>
+        {% endif %}
+    </table>
+</div>
+
+<div class="section">
+    <h2>Spec</h2>
+    <p>
+        <code>
+            <pre>
+{{json.dumps(json.loads(dump.spec), indent=2)}}
+            </pre>
+        </code>
+    </p>
+</div>
 
 {% if dump.error_message %}
 <h3>Error message</h3>
