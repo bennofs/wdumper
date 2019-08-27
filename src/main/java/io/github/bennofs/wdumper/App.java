@@ -174,7 +174,7 @@ public class App implements Runnable, Closeable {
     }
 
     private void setUploadFinished(Handle handle, int id) {
-        handle.createUpdate("UPDATE zenodo SET completed_at = NOW() WHERE id = :id")
+        handle.createUpdate("UPDATE zenodo SET finished_at = NOW() WHERE id = :id")
                 .bind("id", id)
                 .execute();
     }
