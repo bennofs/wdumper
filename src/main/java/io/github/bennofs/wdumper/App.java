@@ -31,15 +31,15 @@ import java.util.stream.Stream;
 
 public class App implements Runnable, Closeable {
     public static class DumpTask {
-        public int id;
-        public String spec;
+        int id;
+        String spec;
     }
 
     public static class ZenodoTask {
-        public int id;
-        public int deposit_id;
-        public int dump_id;
-        public String target;
+        int id;
+        int deposit_id;
+        int dump_id;
+        String target;
 
         @Override
         public String toString() {
@@ -174,7 +174,7 @@ public class App implements Runnable, Closeable {
     }
 
     private void setUploadFinished(Handle handle, int id) {
-        handle.createUpdate("UPDATE zenodo SET finished_at = NOW() WHERE id = :id")
+        handle.createUpdate("UPDATE zenodo SET completed_at = NOW() WHERE id = :id")
                 .bind("id", id)
                 .execute();
     }
@@ -292,7 +292,7 @@ public class App implements Runnable, Closeable {
                         deposit.publish();
 
                         System.out.println("finished upload: " + task.toString());
-                        jdbi.useHandle(handle -> setUploadFinished(handle, task.deposit_id));
+                        jdbi.useHandle(handle -> setUploadFinished(handle, task.id));
                     } catch(Exception e) {
                         System.out.println("upload failed");
                         e.printStackTrace();
