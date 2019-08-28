@@ -75,6 +75,9 @@ public class ValueFilter implements SnakVisitor<Boolean> {
             public Boolean visit(TimeValue value) {
                 return false;
             }
+
+            @Override
+            public Boolean visit(UnsupportedValue value) { return false;  }
         });
     };
 
