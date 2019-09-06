@@ -482,4 +482,9 @@ public class FilteredRdfSerializer implements EntityDocumentDumpProcessor {
             this.statusHandler.reportError(DumpStatusHandler.ErrorLevel.WARNING, "closing the output stream failed: " + e.toString());
         }
     }
+
+    void flush() {
+        this.rdfWriter.finish();
+        this.rdfWriter.start();
+    }
 }
