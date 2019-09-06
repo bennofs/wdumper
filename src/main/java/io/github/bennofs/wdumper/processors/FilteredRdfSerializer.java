@@ -350,7 +350,7 @@ public class FilteredRdfSerializer implements EntityDocumentDumpProcessor {
     }
 
     void writeSimpleStatement(Resource subject, Statement statement) {
-        if (statement.getQualifiers().size() == 0) {
+        if (true) {
             this.snakRdfConverter.setSnakContext(subject,
                     PropertyContext.DIRECT);
             statement.getMainSnak()
