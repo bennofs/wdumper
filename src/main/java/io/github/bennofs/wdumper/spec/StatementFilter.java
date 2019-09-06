@@ -1,15 +1,15 @@
 package io.github.bennofs.wdumper.spec;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.*;
 
 import java.util.Objects;
 import java.util.Set;
 
 @JsonIgnoreProperties({"id"})
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class StatementFilter {
     private final Set<String> properties;
+    @JsonUnwrapped
     private final StatementOptions options;
 
     @JsonCreator

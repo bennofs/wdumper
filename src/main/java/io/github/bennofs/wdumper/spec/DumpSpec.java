@@ -2,6 +2,7 @@ package io.github.bennofs.wdumper.spec;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.MoreObjects;
 import org.eclipse.rdf4j.rio.RDFFormat;
@@ -11,10 +12,15 @@ import java.util.HashMap;
 import java.util.Objects;
 import java.util.Set;
 
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class DumpSpec {
+    @JsonProperty
     final private EntityFilter[] entities;
+    @JsonProperty
+    final private Set<StatementFilter> statements;
     final private HashMap<String, StatementOptions> statementOptions;
     private StatementOptions statementOptionsAll;
+    @JsonProperty
     final private Set<String> languages;
 
     final private boolean truthy;
@@ -43,6 +49,7 @@ public class DumpSpec {
         Objects.requireNonNull(statements);
 
         this.entities = entities;
+        this.statements = statements;
         this.languages = languages;
         this.labels = labels;
         this.descriptions = descriptions;
