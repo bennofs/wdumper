@@ -11,9 +11,10 @@ import org.wikidata.wdtk.datamodel.interfaces.EntityDocumentDumpProcessor;
 import org.wikidata.wdtk.dumpfiles.DumpProcessingController;
 import org.wikidata.wdtk.dumpfiles.MwDumpFile;
 import org.wikidata.wdtk.rdf.PropertyRegister;
-import org.wikidata.wdtk.rdf.SPARQLPropertyRegister;
 
 import java.io.*;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
@@ -48,7 +49,13 @@ public class DumpRunner {
 
     static public DumpRunner create(final int id, final MwDumpFile dumpFile, Path outputDirectory) {
         final DumpProcessingController controller = new DumpProcessingController("wikidatawiki");
-        final PropertyRegister propertyRegister = SPARQLPropertyRegister.createWithWDQS();
+        final PropertyRegister propertyRegister = PropertyRegister.getWikidataPropertyRegister();
+        try {
+            propertyRegister.fetchUsingSPARQL(new URI("https://query.wikidata.org/sparql"));
+        } catch (URISyntaxException e) {
+            System.out.println("failed to fetch property info");
+            e.printStackTrace();
+        }
 
         return new DumpRunner(id, dumpFile, controller, propertyRegister, outputDirectory);
     }
