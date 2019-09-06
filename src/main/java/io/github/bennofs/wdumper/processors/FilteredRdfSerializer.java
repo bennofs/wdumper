@@ -279,7 +279,7 @@ public class FilteredRdfSerializer implements EntityDocumentDumpProcessor {
             if (!spec.includeLanguage(mtv.getLanguageCode())) continue;
 
             this.rdfWriter.writeTripleValueObject(subject, predicate,
-                    RdfConverter.getMonolingualTextValueLiteral(mtv,
+                    FilteredRdfSerializer.getMonolingualTextValueLiteral(mtv,
                             this.rdfWriter));
         }
     }
@@ -426,7 +426,7 @@ public class FilteredRdfSerializer implements EntityDocumentDumpProcessor {
 
     private String convertSiteLanguageCode(String languageCode) {
         try {
-            return WikimediaLanguageCodes.getLanguageCode(languageCode);
+            return WikimediaLanguageCodes.getLanguageCode(WikimediaLanguageCodes.fixLanguageCodeIfDeprecated(languageCode));
         } catch (IllegalArgumentException e) {
             logger.warn("Unknown Wikimedia language code \""
                     + languageCode
@@ -442,16 +442,7 @@ public class FilteredRdfSerializer implements EntityDocumentDumpProcessor {
      */
     public static org.eclipse.rdf4j.model.Value getMonolingualTextValueLiteral(
             MonolingualTextValue value, RdfWriter rdfWriter) {
-        String languageCode;
-        try {
-            languageCode = WikimediaLanguageCodes.getLanguageCode(value
-                    .getLanguageCode());
-        } catch (IllegalArgumentException e) {
-            languageCode = value.getLanguageCode();
-            logger.warn("Unknown Wikimedia language code \""
-                    + languageCode
-                    + "\". Using this code in RDF now, but this might be wrong.");
-        }
+        String languageCode = value.getLanguageCode();
         return rdfWriter.getLiteral(value.getText(), languageCode);
     }
 
