@@ -16,7 +16,7 @@ public class ZstdDumpFile extends MwLocalDumpFile {
 
     @Override
     public InputStream getDumpFileStream() throws IOException {
-        if (!this.getPath().toString().contains("zstd")) {
+        if (!this.getPath().toString().contains(".zst")) {
             return super.getDumpFileStream();
         }
         return new ZstdInputStream(new BufferedInputStream(Files.newInputStream(this.getPath(), StandardOpenOption.READ)));
