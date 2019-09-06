@@ -39,8 +39,7 @@ dependencies {
     implementation("com.github.luben:zstd-jni:1.4.0-1")
 
     // RDF
-    implementation("org.eclipse.rdf4j:rdf4j-repository-sparql:2.3.2")
-    runtime("org.eclipse.rdf4j:rdf4j-rio-ntriples:2.3.2")
+    runtime("org.eclipse.rdf4j:rdf4j-rio-ntriples:2.5.4")
 
     // logging implementation
     runtimeOnly("org.slf4j:slf4j-simple:1.7.26")

@@ -5,6 +5,7 @@ import io.github.bennofs.wdumper.ext.ZstdDumpFile;
 import io.github.bennofs.wdumper.interfaces.DumpStatusHandler;
 import io.github.bennofs.wdumper.interfaces.RunnerStatusHandler;
 import io.github.bennofs.wdumper.spec.DumpSpec;
+import org.wikidata.wdtk.util.Timer;
 import picocli.CommandLine;
 
 import java.io.IOException;
@@ -38,6 +39,7 @@ public class CliRunner implements Runnable {
             System.exit(1);
         }
 
+        final long start = System.currentTimeMillis();
         runner.run(new RunnerStatusHandler() {
             @Override
             public void start() {
@@ -51,7 +53,8 @@ public class CliRunner implements Runnable {
 
             @Override
             public void done() {
-
+                final long end = System.currentTimeMillis();
+                System.out.println("time: " + (end - start) / 1000);
             }
         });
     }
