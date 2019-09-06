@@ -240,13 +240,14 @@ public class FilteredRdfSerializer implements EntityDocumentDumpProcessor {
             final StatementOptions options = spec.findStatementOptions(statementGroup.getProperty().getId());
             if (options == null) continue;
 
-            if (truthy) {
-                statementGroup = statementGroup.getBestStatements();
-                if (statementGroup == null) continue;
+            StatementRank bestRank = null;
+            StatementGroup best = statementGroup.getBestStatements();
+            if (best != null) {
+                bestRank = best.iterator().next().getRank();
             }
 
             for (Statement statement : statementGroup) {
-                writeStatement(subject, statement, options);
+                writeStatement(subject, statement, options, statement.getRank() == bestRank);
             }
 
             if (options.isStatement()) {
@@ -316,7 +317,7 @@ public class FilteredRdfSerializer implements EntityDocumentDumpProcessor {
         this.rankBuffer.clear();
     }
 
-    void writeStatement(Resource subject, Statement statement, StatementOptions options) throws RDFHandlerException {
+    void writeStatement(Resource subject, Statement statement, StatementOptions options, boolean best) throws RDFHandlerException {
         String statementUri = Vocabulary.getStatementUri(statement);
         Resource statementResource = this.rdfWriter.getUri(statementUri);
 
@@ -332,7 +333,7 @@ public class FilteredRdfSerializer implements EntityDocumentDumpProcessor {
                     RdfWriter.RDF_TYPE, RdfWriter.WB_STATEMENT);
         }
 
-        if (options.isSimple()) {
+        if (options.isSimple() && best) {
             writeSimpleStatement(subject, statement);
         }
 
