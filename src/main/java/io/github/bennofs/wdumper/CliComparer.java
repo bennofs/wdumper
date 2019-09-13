@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.github.luben.zstd.ZstdInputStream;
+import io.github.bennofs.wdumper.diffing.RawDiffingProcessor;
 import io.github.bennofs.wdumper.ext.StreamDumpFile;
 import io.github.bennofs.wdumper.ext.ZstdDumpFile;
 import io.github.bennofs.wdumper.interfaces.DumpStatusHandler;
@@ -21,10 +22,7 @@ import org.wikidata.wdtk.dumpfiles.MwLocalDumpFile;
 import org.wikidata.wdtk.rdf.PropertyRegister;
 import picocli.CommandLine;
 
-import java.io.FileDescriptor;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.net.*;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
@@ -54,10 +52,15 @@ public class CliComparer implements Runnable {
             System.err.println("");
 
             final DumpProcessingController controller = new DumpProcessingController("wikidatawiki");
+
+            //ObjectInputStream read = new ObjectInputStream(new FileInputStream("/tmp/properties.bin"));
             final PropertyRegister propertyRegister = PropertyRegister.getWikidataPropertyRegister();
             propertyRegister.fetchUsingSPARQL(new URI("https://query.wikidata.org/sparql"));
 
-            final EntityDocumentDumpProcessor processor = new DiffingProcessor(getInputStream(rdfFilePath), controller.getSitesInformation(), propertyRegister);
+            ObjectOutputStream save = new ObjectOutputStream(new FileOutputStream("/tmp/properties.bin"));
+            save.writeObject(propertyRegister);
+
+            final EntityDocumentDumpProcessor processor = new RawDiffingProcessor(getInputStream(rdfFilePath), controller.getSitesInformation(), propertyRegister);
             final EntityDocumentDumpProcessor timer = new EntityTimerProcessor(0);
             controller.registerEntityDocumentProcessor(processor, null, true);
             controller.registerEntityDocumentProcessor(timer, null, true);
@@ -67,7 +70,7 @@ public class CliComparer implements Runnable {
             controller.processDump(dumpFile);
             processor.close();
             timer.close();
-        } catch(IOException|URISyntaxException|RuntimeException e) {
+        } catch(Exception e) {
             e.printStackTrace();
             System.exit(1);
         }

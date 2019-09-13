@@ -1,5 +1,7 @@
 package io.github.bennofs.wdumper.spec;
 
+import com.google.common.base.MoreObjects;
+
 public class StatementOptions {
     private final boolean simple;
     private final boolean full;
@@ -46,5 +48,15 @@ public class StatementOptions {
 
     public boolean isStatement() {
         return this.full || this.references || this.qualifiers;
+    }
+
+    @Override
+    public String toString() {
+        return MoreObjects.toStringHelper(this)
+                .add("simple", simple)
+                .add("full", full)
+                .add("references", references)
+                .add("qualifiers", qualifiers)
+                .toString();
     }
 }

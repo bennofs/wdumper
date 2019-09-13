@@ -483,7 +483,7 @@ public class FilteredRdfSerializer implements EntityDocumentDumpProcessor {
         }
     }
 
-    void flush() {
+    public void flush() {
         this.rdfWriter.finish();
         this.rdfWriter.start();
     }

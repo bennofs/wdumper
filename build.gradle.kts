@@ -62,6 +62,8 @@ dependencies {
 
     // Use JUnit test framework
     testImplementation("junit:junit:4.12")
+
+    implementation("com.elefana:stringsearch:2.2.0")
 }
 
 application {
