@@ -42,11 +42,13 @@ public class RawDiffingProcessor implements EntityDocumentDumpProcessor {
     private final Thread worker;
     private final BlockingQueue<DiffTask> taskQueue;
 
-    private final ArrayList<DiffWikidataRDF.Parsed> dumpParsedQueue;
+    private final ArrayList<ParsedDocument> dumpParsedQueue;
     private int countDumpSkipped = 0;
     private int countSerSkipped = 0;
     private int countRecentSkipped = 0;
     private int countDumpSameAs = 0;
+
+    private final MatchMemorizer memo = new MatchMemorizer();
 
     static final byte[] ENTITY_DATA_UTF8;
     static final Object ENTITY_DATA_UTF8_PROCESSED;
@@ -107,7 +109,7 @@ public class RawDiffingProcessor implements EntityDocumentDumpProcessor {
                     System.exit(4);
                 }
             }
-        });
+        }, "diff-worker");
         this.dumpParsedQueue = new ArrayList<>();
     }
 
@@ -190,8 +192,8 @@ public class RawDiffingProcessor implements EntityDocumentDumpProcessor {
             final byte[] doc = nextDumpDoc();
             if (doc == null) break;
 
-            final DiffWikidataRDF.Parsed p = new DiffWikidataRDF.Parsed();
-            if (!DiffWikidataRDF.parse(doc, p)) {
+            final ParsedDocument p = new ParsedDocument();
+            if (!ParsedDocument.parse(doc, p)) {
                 this.countDumpSameAs += 1;
                 continue;
             }
@@ -202,25 +204,25 @@ public class RawDiffingProcessor implements EntityDocumentDumpProcessor {
             throw new RuntimeException("unexpected EOF");
         }
 
-        final DiffWikidataRDF.Parsed parsedSer = new DiffWikidataRDF.Parsed();
-        DiffWikidataRDF.parse(task.serDoc, parsedSer);
+        final ParsedDocument parsedSer = new ParsedDocument(task.entityId);
+        ParsedDocument.parse(task.serDoc, parsedSer);
 
         for (int i = 0; i < this.dumpParsedQueue.size(); ++i) {
-            final DiffWikidataRDF.Parsed parsedDump = this.dumpParsedQueue.get(i);
-            final DiffWikidataRDF diff = new DiffWikidataRDF();
-            try {
-                if (diff.populate(task.entityId, parsedDump, parsedSer)) {
-                    this.countRecentSkipped = 0;
-                    this.dumpParsedQueue.remove(i);
-                    if (i > REORDER_BUFFER_SIZE/2) {
-                        for (int x = i - REORDER_BUFFER_SIZE/2; x >= 0; --x) {
-                           this.dumpParsedQueue.remove(0);
-                           this.countDumpSkipped += 1;
-                        }
+            final ParsedDocument parsedDump = this.dumpParsedQueue.get(i);
+            /*System.out.println("dump " + parsedDump.summarize());
+            System.out.println("ser " + parsedSer.summarize());*/
+            if (parsedDump.getId().equals(task.entityId)) {
+                final DiffWikidataRDF diff = new DiffWikidataRDF(task.entityId, parsedDump, parsedSer, memo);
+                diff.compute();
+                this.countRecentSkipped = 0;
+                this.dumpParsedQueue.remove(i);
+                if (i > REORDER_BUFFER_SIZE / 2) {
+                    for (int x = i - REORDER_BUFFER_SIZE / 2; x >= 0; --x) {
+                        this.dumpParsedQueue.remove(0);
+                        this.countDumpSkipped += 1;
                     }
-                    return;
                 }
-            } catch (DesyncException ignored) {
+                return;
             }
         }
 
