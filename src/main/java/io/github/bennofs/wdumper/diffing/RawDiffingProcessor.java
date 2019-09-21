@@ -1,6 +1,12 @@
 package io.github.bennofs.wdumper.diffing;
 
 import com.eaio.stringsearch.BoyerMooreHorspool;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectReader;
+import com.google.common.base.MoreObjects;
 import io.github.bennofs.wdumper.interfaces.DumpStatusHandler;
 import io.github.bennofs.wdumper.processors.FilteredRdfSerializer;
 import io.github.bennofs.wdumper.spec.DumpSpec;
@@ -9,46 +15,69 @@ import io.github.bennofs.wdumper.spec.StatementFilter;
 import org.eclipse.rdf4j.common.io.ByteArrayUtil;
 import org.eclipse.rdf4j.rio.ParserConfig;
 import org.eclipse.rdf4j.rio.helpers.BasicParserSettings;
+import org.wikidata.wdtk.datamodel.helpers.Datamodel;
+import org.wikidata.wdtk.datamodel.helpers.DatamodelMapper;
 import org.wikidata.wdtk.datamodel.interfaces.*;
 import org.wikidata.wdtk.rdf.PropertyRegister;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 
 class DiffTask {
     final public String entityId;
     final public byte[] serDoc;
+    final EntityDocument doc;
 
-    public DiffTask(String entityId, byte[] serDoc) {
+    public DiffTask(String entityId, byte[] serDoc, EntityDocument doc) {
         this.entityId = entityId;
         this.serDoc = serDoc;
+        this.doc = doc;
     }
 }
+
+class Command {
+    public final JsonNode node;
+    public final String id;
+    public final String type;
+
+    public Command(JsonNode node, String id, String type) {
+        this.node = node;
+        this.id = id;
+        this.type = type;
+    }
+
+    @Override
+    public String toString() {
+        return MoreObjects.toStringHelper(this)
+                .add("id", id)
+                .add("type", type)
+                .toString();
+    }
+}
+
 
 public class RawDiffingProcessor implements EntityDocumentDumpProcessor {
     private final InputStream dumpStream;
     private byte[] buffer;
     private int eob;
 
+    private final Iterator<JsonNode> commands;
+    private Command nextCommand;
+    private final ObjectMapper mapper;
+
     private final FilteredRdfSerializer serializer;
     private final ByteArrayOutputStream serializerStream;
     private final Thread worker;
     private final BlockingQueue<DiffTask> taskQueue;
-
-    private final ArrayList<ParsedDocument> dumpParsedQueue;
-    private int countDumpSkipped = 0;
-    private int countSerSkipped = 0;
-    private int countRecentSkipped = 0;
-    private int countDumpSameAs = 0;
-
+    private final Queue<Command> dumpCommands = new ConcurrentLinkedDeque<>();
     private final MatchMemorizer memo = new MatchMemorizer();
+    private final BiConsumer<byte[], Diff> diffHandler;
 
     static final byte[] ENTITY_DATA_UTF8;
     static final Object ENTITY_DATA_UTF8_PROCESSED;
@@ -78,10 +107,14 @@ public class RawDiffingProcessor implements EntityDocumentDumpProcessor {
         return config;
     }
 
-    public RawDiffingProcessor(InputStream rdfStream, Sites sites, PropertyRegister propertyRegister) throws IOException {
+    public RawDiffingProcessor(InputStream rdfStream, InputStream commandStream, Sites sites, PropertyRegister propertyRegister, BiConsumer<byte[], Diff> diffHandler) throws IOException {
         this.dumpStream = rdfStream;
         this.buffer = new byte[0x1000000];
         this.eob = dumpStream.read(buffer);
+
+        this.mapper = new DatamodelMapper(Datamodel.SITE_WIKIDATA);
+        this.commands = this.mapper.readerFor(JsonNode.class).readValues(commandStream);
+        readNextCommand();
 
         int start = matcher.searchBytes(this.buffer, 0, this.eob, ENTITY_DATA_UTF8, ENTITY_DATA_UTF8_PROCESSED);
         assert (start != -1);
@@ -105,12 +138,13 @@ public class RawDiffingProcessor implements EntityDocumentDumpProcessor {
                 } catch(InterruptedException e) {
                     break;
                 } catch(Exception e) {
+                    System.err.println("ERROR during diff processing " + e.toString());
                     e.printStackTrace();
-                    System.exit(4);
                 }
             }
         }, "diff-worker");
-        this.dumpParsedQueue = new ArrayList<>();
+
+        this.diffHandler = diffHandler;
     }
 
     @Override
@@ -127,6 +161,28 @@ public class RawDiffingProcessor implements EntityDocumentDumpProcessor {
             this.worker.join();
         } catch (InterruptedException e) {
             e.printStackTrace();
+        }
+    }
+
+    private Command readCommand() {
+        if (!this.commands.hasNext()) return null;
+        final JsonNode json = this.commands.next();
+        if (json == null) return null;
+        return new Command(json, json.get("id").asText(), json.get("type").asText());
+    }
+
+    private void readNextCommand() {
+        while (true) {
+            this.nextCommand = readCommand();
+            if (this.nextCommand == null) {
+                System.err.println("END OF COMMANDS");
+                return;
+            }
+	    System.err.println("NEXT: " + nextCommand.id);
+            if (this.nextCommand.type.equals("skip_json") || this.nextCommand.type.equals("item") || this.nextCommand.type.equals("property")) {
+                return;
+            }
+            this.dumpCommands.add(this.nextCommand);
         }
     }
 
@@ -185,56 +241,55 @@ public class RawDiffingProcessor implements EntityDocumentDumpProcessor {
         }
     }
 
-    private final static int REORDER_BUFFER_SIZE = 10;
-
-    private void doDiff(DiffTask task) {
-        while (this.dumpParsedQueue.size() < REORDER_BUFFER_SIZE) {
+    private void doDiff(DiffTask task) throws JsonProcessingException {
+        final ParsedDocument parsedDump;
+        while (true) {
             final byte[] doc = nextDumpDoc();
-            if (doc == null) break;
+            final Command nextCommand = dumpCommands.peek();
+
+            if (doc == null) {
+                throw new RuntimeException("unexpected EOF");
+            }
 
             final ParsedDocument p = new ParsedDocument();
-            if (!ParsedDocument.parse(doc, p)) {
-                this.countDumpSameAs += 1;
+            final boolean parseOk = ParsedDocument.parse(doc, p);
+            if (nextCommand != null && nextCommand.type.equals("skip_nt") && p.getId().equals(nextCommand.id)) {
+                dumpCommands.remove();
                 continue;
             }
-            this.dumpParsedQueue.add(p);
-        }
+            if (nextCommand != null && nextCommand.type.equals("need_update") && p.getId().equals(nextCommand.id)) {
+                parsedDump = p;
+                break;
+            }
 
-        if (this.dumpParsedQueue.size() == 0) {
-            throw new RuntimeException("unexpected EOF");
+            if (!parseOk) {
+                continue;
+            }
+            parsedDump = p;
+            break;
         }
 
         final ParsedDocument parsedSer = new ParsedDocument(task.entityId);
         ParsedDocument.parse(task.serDoc, parsedSer);
 
-        for (int i = 0; i < this.dumpParsedQueue.size(); ++i) {
-            final ParsedDocument parsedDump = this.dumpParsedQueue.get(i);
-            /*System.out.println("dump " + parsedDump.summarize());
-            System.out.println("ser " + parsedSer.summarize());*/
-            if (parsedDump.getId().equals(task.entityId)) {
-                final DiffWikidataRDF diff = new DiffWikidataRDF(task.entityId, parsedDump, parsedSer, memo);
-                diff.compute();
-                this.countRecentSkipped = 0;
-                this.dumpParsedQueue.remove(i);
-                if (i > REORDER_BUFFER_SIZE / 2) {
-                    for (int x = i - REORDER_BUFFER_SIZE / 2; x >= 0; --x) {
-                        this.dumpParsedQueue.remove(0);
-                        this.countDumpSkipped += 1;
-                    }
-                }
+        if (parsedDump.getId().equals(task.entityId)) {
+            final Command nextCommand = dumpCommands.peek();
+            if (nextCommand != null && nextCommand.type.equals("need_update") && parsedDump.getId().equals(nextCommand.id)) {
+                dumpCommands.remove();
+                System.err.println("SKIP due to missing update " + parsedDump.getId() + ":" + parsedSer.getId());
                 return;
             }
-        }
 
-        if (countRecentSkipped > REORDER_BUFFER_SIZE) {
-            System.out.flush();
-            System.err.flush();
-            throw new DesyncException("too many desyncs");
+            final Diff diff = new DiffWikidataRDF(task.entityId, parsedDump, parsedSer, memo).compute();
+            if (!diff.differences.isEmpty()) {
+                diffHandler.accept(mapper.writeValueAsBytes(task.doc), diff);
+            }
+        } else {
+            for (Command command : dumpCommands) {
+                System.err.println("COMMAND QUEUE " + command.toString());
+            }
+            throw new RuntimeException("Out of sync! " + parsedDump.getId() + ":" + parsedSer.getId());
         }
-
-        System.out.println("MISSING " + task.entityId);
-        this.countRecentSkipped += 1;
-        this.countSerSkipped += 1;
     }
 
     private void diff(DiffTask task) {
@@ -245,23 +300,49 @@ public class RawDiffingProcessor implements EntityDocumentDumpProcessor {
         }
     }
 
+    private <T extends EntityDocument> T checkCommand(T doc) {
+        if (nextCommand == null) return doc;
+        if (nextCommand.type.equals("skip_json") && nextCommand.id.equals(doc.getEntityId().getId())) {
+            readNextCommand();
+            return null;
+        }
+        if ((nextCommand.type.equals("item") || nextCommand.type.equals("property")) && nextCommand.id.equals(doc.getEntityId().getId())) {
+            System.err.println("UPDATE JSON " + doc.getEntityId().getId());
+            final T value = mapper.convertValue(nextCommand.node, (Class<T>)doc.getClass());
+            readNextCommand();
+            return value;
+        }
+
+        return doc;
+    }
+
     @Override
     public void processItemDocument(ItemDocument itemDocument) {
+        try {
+            System.out.println(this.mapper.writeValueAsString(itemDocument));
+        } catch (JsonProcessingException e) {
+            e.printStackTrace();
+        }
+
         this.serializerStream.reset();
+        itemDocument = this.checkCommand(itemDocument);
+        if (itemDocument == null) return;
         this.serializer.processItemDocument(itemDocument);
         this.serializer.flush();
 
-        diff(new DiffTask(itemDocument.getEntityId().getId(), this.serializerStream.toByteArray()));
+        diff(new DiffTask(itemDocument.getEntityId().getId(), this.serializerStream.toByteArray(), itemDocument));
     }
 
     @Override
     public void processPropertyDocument(PropertyDocument propertyDocument) {
         System.out.println("PROCESS property " + propertyDocument.getEntityId().getId());
         this.serializerStream.reset();
+        propertyDocument = this.checkCommand(propertyDocument);
+        if (propertyDocument == null) return;
         this.serializer.processPropertyDocument(propertyDocument);
         this.serializer.flush();
 
-        diff(new DiffTask(propertyDocument.getEntityId().getId(), this.serializerStream.toByteArray()));
+        diff(new DiffTask(propertyDocument.getEntityId().getId(), this.serializerStream.toByteArray(), propertyDocument));
     }
 
     @Override

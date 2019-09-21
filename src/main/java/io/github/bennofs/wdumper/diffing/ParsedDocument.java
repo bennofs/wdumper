@@ -1,5 +1,6 @@
 package io.github.bennofs.wdumper.diffing;
 
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.tuple.Pair;
@@ -22,9 +23,11 @@ public class ParsedDocument {
         final Set<Triple> other = new HashSet<>();
         final Set<Triple> origOther = new HashSet<>();
         BlankNode matchedNode = null;
+        final Set<ByteBuffer> stableReferrers = new HashSet<>();
         private boolean relativize;
+        boolean stableId;
 
-        public BlankNode(ByteBuffer subject, boolean relativize) {
+        public BlankNode(ByteBuffer subject, boolean relativize, boolean stableId) {
             this.subject = subject;
             this.relativize = relativize;
         }
@@ -38,11 +41,24 @@ public class ParsedDocument {
         }
 
         public boolean isEmpty() {
-            return this.other.isEmpty();
+            return this.origOther.isEmpty();
         }
 
         public void removeMatchingOther(BlankNode b) {
             other.removeIf(b.other::remove);
+        }
+
+        public void setStable(ParsedDocument ctx) {
+            if (this.stableId) return;
+
+            this.stableId = true;
+            this.getLinked().forEach(linked -> {
+                linked.stableReferrers.add(this.subject);
+            });
+        }
+
+        Stream<BlankNode> getLinked() {
+            return Stream.empty();
         }
 
         @Override
@@ -54,8 +70,8 @@ public class ParsedDocument {
     public static class Node extends BlankNode {
         final Map<ByteBuffer, Set<BlankNode>> bnodes = new HashMap<>();
 
-        public Node(ByteBuffer subject, boolean relativize) {
-            super(subject, relativize);
+        public Node(ByteBuffer subject, boolean relativize, boolean stableId) {
+            super(subject, relativize, stableId);
         }
 
         @Override
@@ -64,6 +80,9 @@ public class ParsedDocument {
                 final BlankNode bnode = context.bNode(t.object);
                 this.bnodes.computeIfAbsent(t.predicate, k -> new HashSet<>()).add(bnode);
                 bnode.links.add(t);
+                if (stableId) {
+                    bnode.stableReferrers.add(this.subject);
+                }
                 return;
             }
             super.add(context, t);
@@ -81,13 +100,18 @@ public class ParsedDocument {
         public Stream<BlankNode> getBNodes() {
             return this.bnodes.values().stream().flatMap(Collection::stream);
         }
+
+        @Override
+        Stream<BlankNode> getLinked() {
+            return Stream.concat(super.getLinked(), getBNodes());
+        }
     }
 
     public static class NodeWithValues extends Node {
         final Map<ByteBuffer, Set<Node>> values = new HashMap<>();
 
-        public NodeWithValues(ByteBuffer subject, boolean relativize) {
-            super(subject, relativize);
+        public NodeWithValues(ByteBuffer subject, boolean relativize, boolean stableId) {
+            super(subject, relativize, stableId);
         }
 
         @Override
@@ -95,6 +119,9 @@ public class ParsedDocument {
             if (Utils.isPrefix(Utils.VALUE_PREFIX_UTF8, t.object)) {
                 final Node vnode = context.valueNode(t.object);
                 vnode.links.add(t);
+                if (stableId) {
+                    vnode.stableReferrers.add(this.subject);
+                }
                 this.values.computeIfAbsent(t.predicate, k -> new HashSet<>()).add(vnode);
                 return;
             }
@@ -113,13 +140,18 @@ public class ParsedDocument {
         public Stream<Node> getValues() {
             return this.values.values().stream().flatMap(Collection::stream);
         }
+
+        @Override
+        Stream<BlankNode> getLinked() {
+            return Stream.concat(super.getLinked(), getValues());
+        }
     }
 
     public static class NodeWithReferences extends NodeWithValues {
         final Set<NodeWithValues> references = new HashSet<>();
 
-        public NodeWithReferences(ByteBuffer subject, boolean relativize) {
-            super(subject, relativize);
+        public NodeWithReferences(ByteBuffer subject, boolean relativize, boolean stableId) {
+            super(subject, relativize, stableId);
         }
 
         @Override
@@ -127,6 +159,9 @@ public class ParsedDocument {
             if (t.predicate.equals(ByteBuffer.wrap(Utils.WAS_DERIVED_FROM)) && Utils.isPrefix(Utils.REFERENCE_PREFIX_UTF8, t.object)) {
                 final NodeWithValues rnode = context.referenceNode(t.object);
                 rnode.links.add(t);
+                if (stableId) {
+                    rnode.stableReferrers.add(this.subject);
+                }
                 this.references.add(rnode);
                 return;
             }
@@ -145,11 +180,17 @@ public class ParsedDocument {
         public void consumeMatchingReferences(NodeWithReferences n, BiConsumer<NodeWithValues, NodeWithValues> match) {
             consumeMatchingNodes(this.references, n.references, match);
         }
+
+        @Override
+        Stream<BlankNode> getLinked() {
+            return Stream.concat(super.getLinked(), getReferences());
+        }
     }
 
-    private final Node root = new Node(ByteBuffer.wrap(new byte[]{}), false);
+    private final Node root = new Node(ByteBuffer.wrap(new byte[]{}), false, true);
     private final Map<ByteBuffer, BlankNode> allNodes = new HashMap<>();
     private final Map<ByteBuffer, NodeWithReferences> allStatements = new HashMap<>();
+    private ByteBuffer origRawDoc = ByteBuffer.allocate(0);
     private String id;
 
     ParsedDocument() {
@@ -161,19 +202,19 @@ public class ParsedDocument {
     }
 
     BlankNode bNode(ByteBuffer subject) {
-        return this.allNodes.computeIfAbsent(subject, k -> new BlankNode(subject, true));
+        return this.allNodes.computeIfAbsent(subject, k -> new BlankNode(subject, true, false));
     }
 
     Node valueNode(ByteBuffer subject) {
-        return (Node)this.allNodes.computeIfAbsent(subject, k -> new Node(subject, true));
+        return (Node)this.allNodes.computeIfAbsent(subject, k -> new Node(subject, true, false));
     }
 
     NodeWithValues referenceNode(ByteBuffer subject) {
-        return (NodeWithValues)this.allNodes.computeIfAbsent(subject, k -> new NodeWithValues(subject, true));
+        return (NodeWithValues)this.allNodes.computeIfAbsent(subject, k -> new NodeWithValues(subject, true, false));
     }
 
     NodeWithReferences statementNode(ByteBuffer subject) {
-        return this.allStatements.computeIfAbsent(subject, k -> new NodeWithReferences(subject, false));
+        return this.allStatements.computeIfAbsent(subject, k -> new NodeWithReferences(subject, false, true));
     }
 
     public void add(Triple t) {
@@ -237,6 +278,10 @@ public class ParsedDocument {
         return Objects.requireNonNullElse(this.id, "unknown");
     }
 
+    public ByteBuffer getOrigRawDoc() {
+        return this.origRawDoc.asReadOnlyBuffer();
+    }
+
     private static <T extends BlankNode> boolean allEqualOthers(Collection<T> c) {
         final T first = c.iterator().next();
         return c.stream().allMatch(n -> n.origOther.equals(first.origOther));
@@ -270,19 +315,16 @@ public class ParsedDocument {
     }
 
     private static <T extends BlankNode> void consumeMatchingNodes(Set<T> aCandidates, Set<T> bCandidates, BiConsumer<T,T> match) {
-        final Deque<T> noDataB = new ArrayDeque<>();
+        final Map<Set<ByteBuffer>, Set<T>> bReferrer = bCandidates
+                .stream()
+                .collect(Collectors.toMap(n -> ImmutableSet.copyOf(n.stableReferrers), Collections::singleton, Sets::union));
 
         final Map<ByteBuffer, Set<T>> bIndex = bCandidates
                 .stream()
-                .flatMap(n -> {
-                    if (n.origOther.size() == 0) {
-                        noDataB.add(n);
-                    }
-                    return n.origOther.stream().map(t -> Pair.of(t.object, n));
-                })
+                .flatMap(n -> n.origOther.stream().map(t -> Pair.of(t.object, n)))
                 .collect(Collectors.toMap(Pair::getKey, x -> Collections.singleton(x.getValue()), Sets::union));
 
-        // match by unique object
+        // match by unique referrer or object
         final Map<ByteBuffer, Set<T>> aIndex = new HashMap<>();
         for (Iterator<T> it = aCandidates.iterator(); it.hasNext(); ) {
             T aNode = it.next();
@@ -293,11 +335,20 @@ public class ParsedDocument {
                 continue;
             }
 
+            final Set<ByteBuffer> aReferrers = ImmutableSet.copyOf(aNode.stableReferrers);
+            final Set<T> refmatches = bReferrer.get(aReferrers);
+            if (refmatches != null && refmatches.size() == 1) {
+                it.remove();
+                final T bNode = refmatches.iterator().next();
+                bCandidates.remove(refmatches);
+                match.accept(aNode, bNode);
+                continue;
+            }
+
             for (Triple t : aNode.origOther) {
                 final Set<T> matches = bIndex.get(t.object);
                 if (matches != null && matches.size() == 1) {
                     final T bNode = matches.iterator().next();
-                    bIndex.remove(t.object);
                     it.remove();
                     bCandidates.remove(bNode);
                     match.accept(aNode, bNode);
@@ -383,6 +434,9 @@ public class ParsedDocument {
     public static boolean parse(final byte[] doc, ParsedDocument parsed) {
         int idx = 0;
         final ByteBuffer buffer = ByteBuffer.wrap(doc);
+        parsed.origRawDoc = ByteBuffer.allocate(doc.length);
+        parsed.origRawDoc.put(doc);
+        parsed.origRawDoc.flip();
         while (idx < doc.length) {
             // look for the end of the triple
             int nextIdx = ArrayUtils.indexOf(doc, (byte) 0xa, idx);
@@ -407,6 +461,10 @@ public class ParsedDocument {
 
             // SKIP if this entity is sameAs some other entity
             if (predicate.equals(ByteBuffer.wrap(Utils.SAME_AS_UTF8))) {
+                if (parsed.id == null) {
+                    final String subjectStr = Utils.bufferString(subject);
+                    parsed.id = subjectStr.substring(subjectStr.lastIndexOf("/") + 1, subjectStr.length() - 1);
+                }
                 System.out.println("SKIP SAMEAS " + Utils.bufferString(object));
                 return false;
             }

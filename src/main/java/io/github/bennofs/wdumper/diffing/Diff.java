@@ -1,8 +1,6 @@
 package io.github.bennofs.wdumper.diffing;
 
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -21,8 +19,12 @@ public class Diff {
 
     public final String entityId;
     public final List<Difference> differences = new ArrayList<>();
+    public final ParsedDocument docDump;
+    public final ParsedDocument docSerialized;
 
-    public Diff(String entityId) {
+    public Diff(String entityId, ParsedDocument docDump, ParsedDocument docSerialized) {
         this.entityId = entityId;
+        this.docDump = docDump;
+        this.docSerialized = docSerialized;
     }
 }

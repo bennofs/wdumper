@@ -1,53 +1,10 @@
 package io.github.bennofs.wdumper.diffing;
 
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
-import org.apache.commons.lang3.tuple.Pair;
 
-import java.nio.ByteBuffer;
 import java.util.*;
-import java.util.function.BiConsumer;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 public class DiffWikidataRDF {
-
-
-    public static class ValueNode {
-        final Set<Triple> triples = new HashSet<>();
-        final Map<ByteBuffer, Triple> statementLinks = new HashMap<>();
-        public boolean onlyNormalizedLink = true;
-    }
-
-    private static final HashMap<ByteBuffer, ByteBuffer> serializedToDumpValue = new HashMap<>();
-    private static final HashMap<ByteBuffer, ByteBuffer> serializedToDumpReference = new HashMap<>();
-    private static final HashMap<ByteBuffer, ByteBuffer> serializedToDumpBNode = new HashMap<>();
-
-    public static class Parsed {
-        final public Set<Triple> otherTriples;
-        final public Map<ByteBuffer, Set<Triple>> statementTriples;
-        final public Map<ByteBuffer, ValueNode> valueNodes;
-        final public Map<ByteBuffer, Set<Triple>> referenceTriples;
-        final public Map<ByteBuffer, Set<Triple>> bnodeTriples;
-
-        public Parsed() {
-            otherTriples = new HashSet<>();
-            statementTriples = new HashMap<>();
-            valueNodes = new HashMap<>();
-            referenceTriples = new HashMap<>();
-            bnodeTriples = new HashMap<>();
-        }
-
-        private int removeNormalizedOnlyValues() {
-            Set<Map.Entry<ByteBuffer, ValueNode>> toRemove = valueNodes.entrySet().stream()
-                    .filter(e -> e.getValue().onlyNormalizedLink)
-                    .collect(Collectors.toSet());
-            valueNodes.entrySet().removeAll(toRemove);
-            return toRemove.size();
-        }
-    }
-
     private Diff diff;
     private final String entityId;
     private final ParsedDocument pDump;
@@ -64,7 +21,7 @@ public class DiffWikidataRDF {
     public void reportDifference(String tag, Set<Triple> inDump, Set<Triple> inSer) {
         System.out.println("DIFF " + tag);
         if (this.diff == null) {
-            this.diff = new Diff(entityId);
+            this.diff = new Diff(entityId, pDump, pSer);
         }
         for (Triple t : inDump) {
             System.out.println(t.toString());
@@ -152,7 +109,9 @@ public class DiffWikidataRDF {
             memo.memorize(dump, ser);
             ser.matchedNode = dump;
             dump.matchedNode = ser;
-            return false;
+
+            // skip matching if either node is empty (this can happen due to value/reference node deduplication)
+            return dump.isEmpty() || ser.isEmpty();
         }
 
         // allow mismatches if the data for both nodes is equal

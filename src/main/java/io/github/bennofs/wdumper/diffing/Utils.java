@@ -78,6 +78,10 @@ public class Utils {
 
         // these are standard
         urlEscapeDecode.put(StandardCharsets.US_ASCII.encode("%3A"), StandardCharsets.US_ASCII.encode(":").get());
+        urlEscapeDecode.put(StandardCharsets.US_ASCII.encode("%40"), StandardCharsets.US_ASCII.encode("@").get());
+        urlEscapeDecode.put(StandardCharsets.US_ASCII.encode("%5C"), StandardCharsets.US_ASCII.encode("\\").get());
+        urlEscapeDecode.put(StandardCharsets.US_ASCII.encode("%2A"), StandardCharsets.US_ASCII.encode("*").get());
+        urlEscapeDecode.put(StandardCharsets.US_ASCII.encode("%24"), StandardCharsets.US_ASCII.encode("$").get());
 
         // this one is weird
         urlEscapeDecode.put(StandardCharsets.US_ASCII.encode("%2F"), StandardCharsets.US_ASCII.encode("/").get());
@@ -113,8 +117,14 @@ public class Utils {
             }
 
             slice.put(replacement);
-            System.arraycopy(buf.array(), idx + 3, buf.array(), idx + 1, buf.limit() - idx - 3);
-            buf.limit(buf.limit() - 2);
+            if (replacement == 0x5c) {
+                slice.put((byte)0x5c);
+                System.arraycopy(buf.array(), idx + 3, buf.array(), idx + 2, buf.limit() - idx - 3);
+                buf.limit(buf.limit() - 1);
+            } else {
+                System.arraycopy(buf.array(), idx + 3, buf.array(), idx + 1, buf.limit() - idx - 3);
+                buf.limit(buf.limit() - 2);
+            }
             prevIdx = idx + 1;
         }
     }

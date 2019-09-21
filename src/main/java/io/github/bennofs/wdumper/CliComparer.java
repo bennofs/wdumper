@@ -4,32 +4,25 @@ import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.github.luben.zstd.ZstdInputStream;
+import io.github.bennofs.wdumper.diffing.Diff;
 import io.github.bennofs.wdumper.diffing.RawDiffingProcessor;
+import io.github.bennofs.wdumper.diffing.Utils;
 import io.github.bennofs.wdumper.ext.StreamDumpFile;
-import io.github.bennofs.wdumper.ext.ZstdDumpFile;
-import io.github.bennofs.wdumper.interfaces.DumpStatusHandler;
-import io.github.bennofs.wdumper.interfaces.RunnerStatusHandler;
 import io.github.bennofs.wdumper.processors.DiffingProcessor;
-import io.github.bennofs.wdumper.spec.DumpSpec;
-import io.github.bennofs.wdumper.spec.EntityFilter;
-import io.github.bennofs.wdumper.spec.StatementFilter;
-import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
+import org.apache.commons.io.FileUtils;
 import org.wikidata.wdtk.datamodel.interfaces.EntityDocumentDumpProcessor;
 import org.wikidata.wdtk.dumpfiles.DumpProcessingController;
 import org.wikidata.wdtk.dumpfiles.EntityTimerProcessor;
 import org.wikidata.wdtk.dumpfiles.MwDumpFile;
-import org.wikidata.wdtk.dumpfiles.MwLocalDumpFile;
 import org.wikidata.wdtk.rdf.PropertyRegister;
 import picocli.CommandLine;
 
 import java.io.*;
-import java.net.*;
-import java.nio.file.FileSystems;
+import java.net.InetSocketAddress;
+import java.net.Socket;
+import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.Arrays;
-import java.util.Set;
 import java.util.zip.GZIPInputStream;
 
 public class CliComparer implements Runnable {
@@ -39,10 +32,37 @@ public class CliComparer implements Runnable {
     @CommandLine.Parameters(paramLabel = "RDF", arity = "1", index = "1", description = "RDF dump from wikidata to compare against")
     private URI rdfFilePath;
 
+    @CommandLine.Parameters(paramLabel = "COMMANDS", arity = "1", index = "2", description = "File with commands for aligning the dumps")
+    private URI commandFilePath;
+
+    @CommandLine.Option(names = "-d", description="output directory for differences", defaultValue = "diff")
+    private Path outputDir;
+
+    final private ObjectMapper mapper = new ObjectMapper();
+
+    private void handleDiff(byte[] jsonDoc, Diff d) {
+        try {
+            final Path diffDir = this.outputDir.resolve(d.entityId);
+            Files.createDirectories(diffDir);
+            Files.write(diffDir.resolve("dump.nt"), Utils.bufferBytes(d.docDump.getOrigRawDoc()));
+            Files.write(diffDir.resolve("generated.nt"), Utils.bufferBytes(d.docSerialized.getOrigRawDoc()));
+            Files.write(diffDir.resolve("entity.json"), jsonDoc);
+
+            int idx = 0;
+            for (Diff.Difference difference : d.differences) {
+                mapper.writeValue(diffDir.resolve(idx + ".diff.json").toFile(), difference);
+            }
+        } catch(IOException e) {
+            System.err.println("ERROR cannot write diff " + e);
+            e.printStackTrace();
+        }
+    }
+
     @Override
     public void run() {
         try {
             final MwDumpFile dumpFile = new StreamDumpFile("2019", getInputStream(dumpFilePath));
+            Files.createDirectories(this.outputDir);
 
             final ObjectMapper mapper = new ObjectMapper();
             System.err.println("using spec:");
@@ -60,7 +80,7 @@ public class CliComparer implements Runnable {
             ObjectOutputStream save = new ObjectOutputStream(new FileOutputStream("/tmp/properties.bin"));
             save.writeObject(propertyRegister);
 
-            final EntityDocumentDumpProcessor processor = new RawDiffingProcessor(getInputStream(rdfFilePath), controller.getSitesInformation(), propertyRegister);
+            final EntityDocumentDumpProcessor processor = new RawDiffingProcessor(getInputStream(rdfFilePath), getInputStream(commandFilePath), controller.getSitesInformation(), propertyRegister, this::handleDiff);
             final EntityDocumentDumpProcessor timer = new EntityTimerProcessor(0);
             controller.registerEntityDocumentProcessor(processor, null, true);
             controller.registerEntityDocumentProcessor(timer, null, true);
