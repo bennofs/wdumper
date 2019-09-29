@@ -199,8 +199,11 @@ public class App implements Runnable, Closeable {
             try {
                 runner.addDumpTask(task.id, mapper.readValue(task.spec, DumpSpec.class), new DumpStatusHandler() {
                     @Override
-                    public void reportError(ErrorLevel level, String message) {
+                    public void reportError(ErrorLevel level, String message, Exception cause) {
                         jdbi.useHandle(h -> logDumpMessage(h, runId, task.id, level, message));
+                        if (cause != null) {
+                            cause.printStackTrace();
+                        }
                     }
                 });
             } catch(IOException e) {

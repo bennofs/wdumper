@@ -5,7 +5,6 @@ import org.eclipse.rdf4j.common.io.ByteArrayUtil;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Pattern;
@@ -15,6 +14,14 @@ public class Utils {
     static final byte[] ENTITY_DATA_UTF8;
     static final byte[] DIRECT_NORMALIZED_UTF8;
     static final byte[] OWL_UTF8;
+    static final byte[] OWL_DATATYPE_UTF8;
+    static final byte[] OWL_OBJECT_UTF8;
+    static final byte[] OWL_CLASS_UTF8;
+    static final byte[] OWL_RESTRICTION_UTF8;
+    static final byte[] OWL_THING_UTF8;
+    static final byte[] OWL_COMPLEMENT_UTF8;
+    static final byte[] OWL_ON_PROPERTY_UTF8;
+    static final byte[] WIKIBASE_DUMP;
     static final byte[] XSD_DECIMAL_UTF8;
     static final byte[] SAME_AS_UTF8;
     static final byte[] XSD_DOUBLE_UTF8;
@@ -42,6 +49,13 @@ public class Utils {
         ENTITY_DATA_UTF8 = "<https://www.wikidata.org/wiki/Special:EntityData/".getBytes(StandardCharsets.UTF_8);
         DIRECT_NORMALIZED_UTF8 = "<http://www.wikidata.org/prop/direct-normalized".getBytes(StandardCharsets.UTF_8);
         OWL_UTF8 = "<http://www.w3.org/2002/07/owl#".getBytes(StandardCharsets.UTF_8);
+        OWL_DATATYPE_UTF8 = "<http://www.w3.org/2002/07/owl#DatatypeProperty>".getBytes(StandardCharsets.UTF_8);
+        OWL_OBJECT_UTF8 = "<http://www.w3.org/2002/07/owl#ObjectProperty>".getBytes(StandardCharsets.UTF_8);
+        OWL_CLASS_UTF8 = "<http://www.w3.org/2002/07/owl#Class>".getBytes(StandardCharsets.UTF_8);
+        OWL_THING_UTF8 = "<http://www.w3.org/2002/07/owl#Thing>".getBytes(StandardCharsets.UTF_8);
+        OWL_RESTRICTION_UTF8 = "<http://www.w3.org/2002/07/owl#Restriction>".getBytes(StandardCharsets.UTF_8);
+        OWL_COMPLEMENT_UTF8 = "<http://www.w3.org/2002/07/owl#complementOf>".getBytes(StandardCharsets.UTF_8);
+        OWL_ON_PROPERTY_UTF8 = "<http://www.w3.org/2002/07/owl#onProperty>".getBytes(StandardCharsets.UTF_8);
         XSD_DECIMAL_UTF8 = "<http://www.w3.org/2001/XMLSchema#decimal>".getBytes(StandardCharsets.UTF_8);
         SAME_AS_UTF8 = "<http://www.w3.org/2002/07/owl#sameAs>".getBytes(StandardCharsets.UTF_8);
         XSD_DOUBLE_UTF8 = "<http://www.w3.org/2001/XMLSchema#double>".getBytes(StandardCharsets.UTF_8);
@@ -62,6 +76,7 @@ public class Utils {
         WAS_DERIVED_FROM = "<http://www.w3.org/ns/prov#wasDerivedFrom>".getBytes(StandardCharsets.UTF_8);
         QUANTITY_NORMALIZED = "<http://wikiba.se/ontology#quantityNormalized>".getBytes(StandardCharsets.UTF_8);
         GEO_AUTO_PRECISION = "<http://wikiba.se/ontology#GeoAutoPrecision>".getBytes(StandardCharsets.UTF_8);
+        WIKIBASE_DUMP = "<http://wikiba.se/ontology#Dump>".getBytes(StandardCharsets.UTF_8);
     }
 
     static {
@@ -121,11 +136,12 @@ public class Utils {
                 slice.put((byte)0x5c);
                 System.arraycopy(buf.array(), idx + 3, buf.array(), idx + 2, buf.limit() - idx - 3);
                 buf.limit(buf.limit() - 1);
+                prevIdx = idx + 2;
             } else {
                 System.arraycopy(buf.array(), idx + 3, buf.array(), idx + 1, buf.limit() - idx - 3);
                 buf.limit(buf.limit() - 2);
+                prevIdx = idx + 1;
             }
-            prevIdx = idx + 1;
         }
     }
 

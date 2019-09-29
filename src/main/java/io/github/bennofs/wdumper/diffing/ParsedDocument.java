@@ -19,6 +19,7 @@ import java.util.stream.Stream;
 public class ParsedDocument {
     public static class BlankNode {
         final ByteBuffer subject;
+        public boolean orphan = false;
         Set<Triple> links = new HashSet<>();
         final Set<Triple> other = new HashSet<>();
         final Set<Triple> origOther = new HashSet<>();
@@ -30,6 +31,7 @@ public class ParsedDocument {
         public BlankNode(ByteBuffer subject, boolean relativize, boolean stableId) {
             this.subject = subject;
             this.relativize = relativize;
+            this.stableId = stableId;
         }
 
         public void add(ParsedDocument context, Triple t) {
@@ -44,17 +46,8 @@ public class ParsedDocument {
             return this.origOther.isEmpty();
         }
 
-        public void removeMatchingOther(BlankNode b) {
+        public void matchOther(BlankNode b) {
             other.removeIf(b.other::remove);
-        }
-
-        public void setStable(ParsedDocument ctx) {
-            if (this.stableId) return;
-
-            this.stableId = true;
-            this.getLinked().forEach(linked -> {
-                linked.stableReferrers.add(this.subject);
-            });
         }
 
         Stream<BlankNode> getLinked() {
@@ -64,6 +57,11 @@ public class ParsedDocument {
         @Override
         public String toString() {
             return "Node(subject=" + Utils.bufferString(this.subject) +")";
+        }
+
+        public void reset() {
+            this.other.clear();
+            this.other.addAll(origOther);
         }
     }
 
@@ -188,8 +186,16 @@ public class ParsedDocument {
     }
 
     private final Node root = new Node(ByteBuffer.wrap(new byte[]{}), false, true);
-    private final Map<ByteBuffer, BlankNode> allNodes = new HashMap<>();
-    private final Map<ByteBuffer, NodeWithReferences> allStatements = new HashMap<>();
+    final Map<ByteBuffer, BlankNode> allBNodes = new HashMap<>();
+    final Map<ByteBuffer, Node> allValueNodes = new HashMap<>();
+    final Map<ByteBuffer, NodeWithValues> allReferences = new HashMap<>();
+    final Map<ByteBuffer, NodeWithReferences> allStatements = new HashMap<>();
+
+    private final Map<ByteBuffer, BlankNode> unmatchedBNodes = new HashMap<>();
+    private final Map<ByteBuffer, Node> unmatchedValueNodes = new HashMap<>();
+    private final Map<ByteBuffer, NodeWithValues> unmatchedReferences = new HashMap<>();
+    private final Map<ByteBuffer, NodeWithReferences> unmatchedStatements = new HashMap<>();
+
     private ByteBuffer origRawDoc = ByteBuffer.allocate(0);
     private String id;
 
@@ -202,15 +208,15 @@ public class ParsedDocument {
     }
 
     BlankNode bNode(ByteBuffer subject) {
-        return this.allNodes.computeIfAbsent(subject, k -> new BlankNode(subject, true, false));
+        return this.allBNodes.computeIfAbsent(subject, k -> new BlankNode(subject, true, false));
     }
 
     Node valueNode(ByteBuffer subject) {
-        return (Node)this.allNodes.computeIfAbsent(subject, k -> new Node(subject, true, false));
+        return this.allValueNodes.computeIfAbsent(subject, k -> new Node(subject, true, false));
     }
 
     NodeWithValues referenceNode(ByteBuffer subject) {
-        return (NodeWithValues)this.allNodes.computeIfAbsent(subject, k -> new NodeWithValues(subject, true, false));
+        return this.allReferences.computeIfAbsent(subject, k -> new NodeWithValues(subject, true, true));
     }
 
     NodeWithReferences statementNode(ByteBuffer subject) {
@@ -258,17 +264,8 @@ public class ParsedDocument {
         return root;
     }
 
-    public Stream<BlankNode> getAllNodes() {
-        return allNodes.values().stream();
-    }
-
-    public BlankNode findNode(ByteBuffer subject) {
-        return this.allNodes.get(subject);
-    }
-
     public String summarize() {
         return "ParsedDocument(stmtCount=" + this.allStatements.size() +
-                " nodeCount="+this.allNodes.size() +
                 " otherCount="+this.root.other.size() + ":" + this.root.bnodes.size() +
                 " id="+this.getId()+
                 ")";
@@ -283,8 +280,9 @@ public class ParsedDocument {
     }
 
     private static <T extends BlankNode> boolean allEqualOthers(Collection<T> c) {
-        final T first = c.iterator().next();
-        return c.stream().allMatch(n -> n.origOther.equals(first.origOther));
+        final Optional<T> first = c.stream().filter(n -> !n.isEmpty()).findFirst();
+
+        return c.stream().allMatch(n -> n.isEmpty() || n.origOther.equals(first.get().origOther));
     }
 
     private static <T extends BlankNode> boolean resolveMatching(Pair<Set<T>, Set<T>> matching, Set<T> aCandidates, Set<T> bCandidates, BiConsumer<T, T> match) {
@@ -314,6 +312,150 @@ public class ParsedDocument {
         return false;
     }
 
+    private static <T extends BlankNode> void matchBySubject(Map<ByteBuffer, T> a, Map<ByteBuffer, T> b) {
+        for (Iterator<T> aNodeIt = a.values().iterator(); aNodeIt.hasNext(); ) {
+            final T aNode = aNodeIt.next();
+            final T bNode = b.remove(aNode.subject);
+            if (bNode != null) {
+                aNodeIt.remove();
+                aNode.matchedNode = bNode;
+                bNode.matchedNode = aNode;
+            }
+        }
+    }
+
+    private static ImmutableSet<ByteBuffer> stableRefKey(BlankNode n) {
+        return ImmutableSet.copyOf(n.stableReferrers);
+    }
+
+    public <T extends BlankNode> void matchByStructure(Map<ByteBuffer, T> a, Map<ByteBuffer, T> b) {
+        final Map<Set<ByteBuffer>, Set<T>> aReferrer = a.values().stream()
+                .collect(Collectors.toMap(ParsedDocument::stableRefKey, Collections::singleton, Sets::union));
+        final Map<Set<ByteBuffer>, Set<T>> bReferrer = b.values().stream()
+                .collect(Collectors.toMap(ParsedDocument::stableRefKey, Collections::singleton, Sets::union));
+
+        for (Map.Entry<Set<ByteBuffer>, Set<T>> aEntry : aReferrer.entrySet()) {
+            final Set<T> aCandidates = aEntry.getValue();
+            final Set<T> bCandidates = bReferrer.get(aEntry.getKey());
+            if (bCandidates == null) continue;
+
+            // match best by content
+            final Optional<T> aEmpty = aCandidates.stream().filter(T::isEmpty).findAny();
+            final Optional<T> bEmpty = bCandidates.stream().filter(T::isEmpty).findAny();
+            for (T aNode : aCandidates) {
+                long best = 0;
+                ArrayList<T> bestNodes = new ArrayList<>();
+                final Set<ByteBuffer> objects = aNode.origOther.stream().map(t -> t.object).collect(Collectors.toSet());
+                for (T bNode : bCandidates) {
+                    long score = bNode.origOther.stream().filter(t -> objects.contains(t.object)).count();
+                    if (score > best) {
+                        bestNodes.clear();
+                        best = score;
+                    }
+                    if (score == best) {
+                        bestNodes.add(bNode);
+                    }
+                }
+
+                for (T bNode : bestNodes) {
+                    a.remove(aNode.subject);
+                    b.remove(bNode.subject);
+                    aNode.matchedNode = bNode;
+                    bNode.matchedNode = aNode;
+                }
+
+                // match to any empty node if there is one
+                // it doesn't matter which one because the referrer set is the same, so all empty nodes are equal
+                if (bEmpty.isPresent()) {
+                    final T bNode = bEmpty.get();
+                    a.remove(aNode.subject);
+                    b.remove(bNode.subject);
+                    bNode.matchedNode = aNode;
+                    aNode.matchedNode = bNode;
+                }
+            }
+            if (aEmpty.isPresent()) {
+                final T aNode = aEmpty.get();
+                if (!bCandidates.isEmpty()) a.remove(aNode.subject);
+                for (T bNode : bCandidates) {
+                    if (bNode.matchedNode != null) continue;
+                    b.remove(bNode.subject);
+                    bNode.matchedNode = aNode;
+                    aNode.matchedNode = bNode;
+                }
+            }
+
+        }
+    }
+
+    public BlankNode findNode(ByteBuffer n) {
+        return this.allBNodes.getOrDefault(n,
+                this.allValueNodes.getOrDefault(n,
+                        this.allReferences.getOrDefault(n,
+                                this.allStatements.get(n))));
+    }
+
+    public boolean isOrphan(BlankNode n) {
+        if (n.stableId) return false;
+        if (n.orphan) return true;
+
+        Set<BlankNode> toVisit = new HashSet<>();
+        Set<ByteBuffer> visited = new HashSet<>();
+        toVisit.add(n);
+        while (!toVisit.isEmpty()) {
+            final Iterator<BlankNode> it = toVisit.iterator();
+            final BlankNode cur = it.next();
+            it.remove();
+            if (!cur.stableReferrers.isEmpty()) return false;
+            visited.add(cur.subject);
+            for (Triple t : n.links) {
+                if (visited.contains(t.subject)) continue;
+                final BlankNode r = findNode(t.subject);
+                if (r != null && !r.stableId && !r.orphan) toVisit.add(r);
+            }
+
+        }
+        for (ByteBuffer key : visited) {
+            this.findNode(key).orphan = true;
+        }
+        return true;
+    }
+
+    private void fillUnmatched() {
+        this.unmatchedBNodes.putAll(this.allBNodes);
+        this.unmatchedValueNodes.putAll(this.allValueNodes);
+        this.unmatchedReferences.putAll(this.allReferences);
+        this.unmatchedStatements.putAll(this.allStatements);
+    }
+
+    private boolean emptyRef(ByteBuffer ref) {
+        final Node n = this.allReferences.getOrDefault(ref, this.allStatements.get(ref));
+        return n != null && n.isEmpty();
+    }
+
+    private void filterStableRef(ParsedDocument other) {
+        Stream.concat(this.allBNodes.values().stream(), this.allValueNodes.values().stream()).forEach(node -> {
+            node.stableReferrers.removeIf(ref -> this.emptyRef(ref) || other.emptyRef(ref));
+        });
+    }
+
+    public void matchNodes(ParsedDocument other) {
+        this.fillUnmatched();
+        other.fillUnmatched();
+
+        // match statements and references by ID
+        matchBySubject(this.unmatchedStatements, other.unmatchedStatements);
+        matchBySubject(this.unmatchedReferences, other.unmatchedReferences);
+
+        // filter stable references
+        this.filterStableRef(other);
+        other.filterStableRef(this);
+
+        // match value nodes and bnodes by structure since they don't have stable identifiers
+        matchByStructure(this.unmatchedValueNodes, other.unmatchedValueNodes);
+        matchByStructure(this.unmatchedBNodes, other.unmatchedBNodes);
+    }
+
     private static <T extends BlankNode> void consumeMatchingNodes(Set<T> aCandidates, Set<T> bCandidates, BiConsumer<T,T> match) {
         final Map<Set<ByteBuffer>, Set<T>> bReferrer = bCandidates
                 .stream()
@@ -340,7 +482,7 @@ public class ParsedDocument {
             if (refmatches != null && refmatches.size() == 1) {
                 it.remove();
                 final T bNode = refmatches.iterator().next();
-                bCandidates.remove(refmatches);
+                bCandidates.remove(bNode);
                 match.accept(aNode, bNode);
                 continue;
             }
@@ -448,6 +590,14 @@ public class ParsedDocument {
             final int oStart = ArrayUtils.indexOf(doc, (byte)0x20, pStart + 1) + 1;
             assert (oStart != 0);
 
+            if (oStart > nextIdx || pStart > nextIdx) {
+                final ByteBuffer line = buffer.slice();
+                line.position(idx);
+                line.limit(nextIdx);
+                System.err.println(Utils.bufferString(buffer));
+                throw new RuntimeException("Invalid line: " + Utils.bufferString(line));
+            }
+
             // define ByteBuffers for subject, predicate, object
             final ByteBuffer subject = buffer.slice();
             final ByteBuffer predicate = buffer.slice();
@@ -489,8 +639,19 @@ public class ParsedDocument {
                 continue;
             }
 
+            // SKIP if object is normalized
+            if (Utils.isPrefix(Utils.DIRECT_NORMALIZED_UTF8,object) || Utils.isPrefix(Utils.QUALIFIER_NORMALIZED,object)
+                    || Utils.isPrefix(Utils.REFERENCE_NORMALIZED,object) || Utils.isPrefix(Utils.STATEMENT_NORMALIZED,object)) {
+                idx = nextIdx + 1;
+                continue;
+            }
+
+
             // SKIP owl things
-            if (Utils.isPrefix(Utils.OWL_UTF8, predicate) || Utils.isPrefix(Utils.OWL_UTF8, object)) {
+            if (ByteBuffer.wrap(Utils.OWL_CLASS_UTF8).equals(object) || ByteBuffer.wrap(Utils.OWL_DATATYPE_UTF8).equals(object)
+                || ByteBuffer.wrap(Utils.OWL_OBJECT_UTF8).equals(object) || ByteBuffer.wrap(Utils.OWL_RESTRICTION_UTF8).equals(object)
+                || ByteBuffer.wrap(Utils.OWL_THING_UTF8).equals(object) || ByteBuffer.wrap(Utils.OWL_ON_PROPERTY_UTF8).equals(predicate)
+                || ByteBuffer.wrap(Utils.OWL_COMPLEMENT_UTF8).equals(predicate)) {
                 idx = nextIdx + 1;
                 continue;
             }
@@ -501,13 +662,18 @@ public class ParsedDocument {
                 continue;
             }
 
-
             // SKIP EntityData, but extract entity id (not implemented)
             if (Utils.isPrefix(Utils.ENTITY_DATA_UTF8, subject)) {
                 if (parsed.id == null) {
                     final String subjectStr = Utils.bufferString(subject);
                     parsed.id = subjectStr.substring(subjectStr.lastIndexOf("/") + 1, subjectStr.length() - 1);
                 }
+                idx = nextIdx + 1;
+                continue;
+            }
+
+            // SKIP statements concerning dump version
+            if (ByteBuffer.wrap(Utils.WIKIBASE_DUMP).equals(subject)) {
                 idx = nextIdx + 1;
                 continue;
             }

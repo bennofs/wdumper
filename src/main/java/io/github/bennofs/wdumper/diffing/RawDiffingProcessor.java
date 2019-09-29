@@ -41,6 +41,12 @@ class DiffTask {
     }
 }
 
+class FatalException extends RuntimeException {
+    public FatalException(String msg) {
+        super(msg);
+    }
+}
+
 class Command {
     public final JsonNode node;
     public final String id;
@@ -76,7 +82,6 @@ public class RawDiffingProcessor implements EntityDocumentDumpProcessor {
     private final Thread worker;
     private final BlockingQueue<DiffTask> taskQueue;
     private final Queue<Command> dumpCommands = new ConcurrentLinkedDeque<>();
-    private final MatchMemorizer memo = new MatchMemorizer();
     private final BiConsumer<byte[], Diff> diffHandler;
 
     static final byte[] ENTITY_DATA_UTF8;
@@ -123,12 +128,15 @@ public class RawDiffingProcessor implements EntityDocumentDumpProcessor {
         this.serializerStream = new ByteArrayOutputStream();
         this.serializer = new FilteredRdfSerializer(getSpec(), serializerStream, sites, propertyRegister, new DumpStatusHandler() {
             @Override
-            public void reportError(ErrorLevel level, String message) {
-
+            public void reportError(ErrorLevel level, String message, Exception cause) {
+                System.err.println(level.toString() + " " + message);
+                if (cause != null) {
+                    cause.printStackTrace();
+                }
             }
         });
 
-        this.taskQueue = new ArrayBlockingQueue<>(100);
+        this.taskQueue = new ArrayBlockingQueue<>(10);
 
         this.worker = new Thread(() -> {
             while (!Thread.currentThread().isInterrupted()) {
@@ -137,6 +145,9 @@ public class RawDiffingProcessor implements EntityDocumentDumpProcessor {
                     doDiff(task);
                 } catch(InterruptedException e) {
                     break;
+                } catch (FatalException e) {
+                    e.printStackTrace();
+                    System.exit(1);
                 } catch(Exception e) {
                     System.err.println("ERROR during diff processing " + e.toString());
                     e.printStackTrace();
@@ -223,7 +234,7 @@ public class RawDiffingProcessor implements EntityDocumentDumpProcessor {
             int idx = matcher.searchBytes(this.buffer, start, this.eob, ENTITY_DATA_UTF8, ENTITY_DATA_UTF8_PROCESSED);
             if (idx == -1 || idx + entityEnd > this.eob) {
                 if (refillBuffer() == -1) {
-                    final byte[] out = Arrays.copyOfRange(this.buffer, 1, this.buffer.length);
+                    final byte[] out = Arrays.copyOfRange(this.buffer, 1, this.eob);
                     this.buffer = new byte[0];
                     return out;
                 }
@@ -248,7 +259,7 @@ public class RawDiffingProcessor implements EntityDocumentDumpProcessor {
             final Command nextCommand = dumpCommands.peek();
 
             if (doc == null) {
-                throw new RuntimeException("unexpected EOF");
+                throw new FatalException("unexpected EOF");
             }
 
             final ParsedDocument p = new ParsedDocument();
@@ -280,15 +291,15 @@ public class RawDiffingProcessor implements EntityDocumentDumpProcessor {
                 return;
             }
 
-            final Diff diff = new DiffWikidataRDF(task.entityId, parsedDump, parsedSer, memo).compute();
-            if (!diff.differences.isEmpty()) {
+            final Diff diff = new DiffWikidataRDF(task.entityId, parsedDump, parsedSer).compute();
+            if (diff != null) {
                 diffHandler.accept(mapper.writeValueAsBytes(task.doc), diff);
             }
         } else {
             for (Command command : dumpCommands) {
                 System.err.println("COMMAND QUEUE " + command.toString());
             }
-            throw new RuntimeException("Out of sync! " + parsedDump.getId() + ":" + parsedSer.getId());
+            throw new FatalException("Out of sync! " + parsedDump.getId() + ":" + parsedSer.getId());
         }
     }
 
@@ -318,12 +329,6 @@ public class RawDiffingProcessor implements EntityDocumentDumpProcessor {
 
     @Override
     public void processItemDocument(ItemDocument itemDocument) {
-        try {
-            System.out.println(this.mapper.writeValueAsString(itemDocument));
-        } catch (JsonProcessingException e) {
-            e.printStackTrace();
-        }
-
         this.serializerStream.reset();
         itemDocument = this.checkCommand(itemDocument);
         if (itemDocument == null) return;

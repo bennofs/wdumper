@@ -62,7 +62,7 @@ public class FilteredRdfSerializer implements EntityDocumentDumpProcessor {
 
             writeItemDocument(itemDocument);
         } catch(Exception e) {
-            this.statusHandler.reportError(DumpStatusHandler.ErrorLevel.ERROR, "failed to process item, document " + this.count + ": error " + e.toString());
+            this.statusHandler.reportError(DumpStatusHandler.ErrorLevel.ERROR, "failed to process item, document " + this.count + ": error " + e.toString(), e);
         }
     }
 
@@ -74,7 +74,7 @@ public class FilteredRdfSerializer implements EntityDocumentDumpProcessor {
 
             writePropertyDocument(propertyDocument);
         } catch(Exception e) {
-            this.statusHandler.reportError(DumpStatusHandler.ErrorLevel.ERROR, "failed to process item, document " + this.count + ": error " + e.toString());
+            this.statusHandler.reportError(DumpStatusHandler.ErrorLevel.ERROR, "failed to process item, document " + this.count + ": error " + e.toString(), e);
         }
     }
 
@@ -86,7 +86,7 @@ public class FilteredRdfSerializer implements EntityDocumentDumpProcessor {
 
             throw new NotImplementedException("serialization of lexemes not implemented yet");
         } catch(Exception e) {
-            this.statusHandler.reportError(DumpStatusHandler.ErrorLevel.ERROR, "failed to process item, document " + this.count + ": error " + e.toString());
+            this.statusHandler.reportError(DumpStatusHandler.ErrorLevel.ERROR, "failed to process item, document " + this.count + ": error " + e.toString(), e);
         }
     }
 
@@ -226,10 +226,6 @@ public class FilteredRdfSerializer implements EntityDocumentDumpProcessor {
                 .getUri(Vocabulary.WB_NO_VALUE_PROP), Vocabulary
                 .getPropertyUri(document.getEntityId(),
                         PropertyContext.NO_VALUE));
-        this.rdfWriter.writeTripleUriObject(subject, this.rdfWriter
-                .getUri(Vocabulary.WB_NO_QUALIFIER_VALUE_PROP), Vocabulary
-                .getPropertyUri(document.getEntityId(),
-                        PropertyContext.NO_QUALIFIER_VALUE));
         // TODO something more with NO_VALUE
     }
 
@@ -479,7 +475,7 @@ public class FilteredRdfSerializer implements EntityDocumentDumpProcessor {
         try {
             this.outputStream.close();
         } catch(IOException e) {
-            this.statusHandler.reportError(DumpStatusHandler.ErrorLevel.WARNING, "closing the output stream failed: " + e.toString());
+            this.statusHandler.reportError(DumpStatusHandler.ErrorLevel.WARNING, "closing the output stream failed: " + e.toString(), e);
         }
     }
 

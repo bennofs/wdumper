@@ -8,8 +8,6 @@ import io.github.bennofs.wdumper.diffing.Diff;
 import io.github.bennofs.wdumper.diffing.RawDiffingProcessor;
 import io.github.bennofs.wdumper.diffing.Utils;
 import io.github.bennofs.wdumper.ext.StreamDumpFile;
-import io.github.bennofs.wdumper.processors.DiffingProcessor;
-import org.apache.commons.io.FileUtils;
 import org.wikidata.wdtk.datamodel.interfaces.EntityDocumentDumpProcessor;
 import org.wikidata.wdtk.dumpfiles.DumpProcessingController;
 import org.wikidata.wdtk.dumpfiles.EntityTimerProcessor;
@@ -51,6 +49,7 @@ public class CliComparer implements Runnable {
             int idx = 0;
             for (Diff.Difference difference : d.differences) {
                 mapper.writeValue(diffDir.resolve(idx + ".diff.json").toFile(), difference);
+                idx += 1;
             }
         } catch(IOException e) {
             System.err.println("ERROR cannot write diff " + e);
@@ -68,7 +67,7 @@ public class CliComparer implements Runnable {
             System.err.println("using spec:");
             mapper.enable(SerializationFeature.INDENT_OUTPUT);
             mapper.disable(JsonGenerator.Feature.AUTO_CLOSE_TARGET);
-            mapper.writeValue(System.err, DiffingProcessor.getSpec());
+            mapper.writeValue(System.err, RawDiffingProcessor.getSpec());
             System.err.println("");
 
             final DumpProcessingController controller = new DumpProcessingController("wikidatawiki");

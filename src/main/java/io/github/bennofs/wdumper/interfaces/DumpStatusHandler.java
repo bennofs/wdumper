@@ -7,5 +7,5 @@ public interface DumpStatusHandler {
         WARNING
     }
 
-    void reportError(ErrorLevel level, String message);
+    void reportError(ErrorLevel level, String message, Exception cause);
 }

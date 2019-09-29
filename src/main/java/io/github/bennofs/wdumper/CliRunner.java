@@ -30,8 +30,11 @@ public class CliRunner implements Runnable {
 
             runner.addDumpTask(1, spec, new DumpStatusHandler() {
                 @Override
-                public void reportError(ErrorLevel level, String message) {
+                public void reportError(ErrorLevel level, String message, Exception cause) {
                     System.err.println("[" + level.toString() + "] " + message);
+                    if (cause != null) {
+                        cause.printStackTrace();
+                    }
                 }
             });
         } catch(IOException e) {
