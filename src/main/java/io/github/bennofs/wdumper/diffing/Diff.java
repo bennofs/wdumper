@@ -1,5 +1,7 @@
 package io.github.bennofs.wdumper.diffing;
 
+import com.google.common.collect.ImmutableSet;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -12,8 +14,8 @@ public class Diff {
 
         public Difference(String tag, Set<Triple> inDump, Set<Triple> inSerialized) {
             this.tag = tag;
-            this.inDump = inDump;
-            this.inSerialized = inSerialized;
+            this.inDump = ImmutableSet.copyOf(inDump);
+            this.inSerialized = ImmutableSet.copyOf(inSerialized);
         }
     }
 
