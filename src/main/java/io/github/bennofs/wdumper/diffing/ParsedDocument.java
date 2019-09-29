@@ -24,7 +24,7 @@ public class ParsedDocument {
         final Set<Triple> other = new HashSet<>();
         final Set<Triple> origOther = new HashSet<>();
         BlankNode matchedNode = null;
-        final Set<ByteBuffer> stableReferrers = new HashSet<>();
+        final Set<Pair<ByteBuffer, ByteBuffer>> stableReferrers = new HashSet<>();
         private boolean relativize;
         boolean stableId;
 
@@ -79,7 +79,7 @@ public class ParsedDocument {
                 this.bnodes.computeIfAbsent(t.predicate, k -> new HashSet<>()).add(bnode);
                 bnode.links.add(t);
                 if (stableId) {
-                    bnode.stableReferrers.add(this.subject);
+                    bnode.stableReferrers.add(Pair.of(this.subject, t.predicate));
                 }
                 return;
             }
@@ -89,10 +89,6 @@ public class ParsedDocument {
         @Override
         public boolean isEmpty() {
             return super.isEmpty() && this.bnodes.isEmpty();
-        }
-
-        public void consumeMatchingBNodes(Node n, BiConsumer<BlankNode, BlankNode> match) {
-            consumeMatchingNodes(this.bnodes, n.bnodes, match);
         }
 
         public Stream<BlankNode> getBNodes() {
@@ -118,7 +114,7 @@ public class ParsedDocument {
                 final Node vnode = context.valueNode(t.object);
                 vnode.links.add(t);
                 if (stableId) {
-                    vnode.stableReferrers.add(this.subject);
+                    vnode.stableReferrers.add(Pair.of(this.subject, t.predicate));
                 }
                 this.values.computeIfAbsent(t.predicate, k -> new HashSet<>()).add(vnode);
                 return;
@@ -129,10 +125,6 @@ public class ParsedDocument {
         @Override
         public boolean isEmpty() {
             return super.isEmpty() && values.isEmpty();
-        }
-
-        public void consumeMatchingValues(NodeWithValues n, BiConsumer<Node, Node> match) {
-            consumeMatchingNodes(this.values, n.values, match);
         }
 
         public Stream<Node> getValues() {
@@ -158,7 +150,7 @@ public class ParsedDocument {
                 final NodeWithValues rnode = context.referenceNode(t.object);
                 rnode.links.add(t);
                 if (stableId) {
-                    rnode.stableReferrers.add(this.subject);
+                    rnode.stableReferrers.add(Pair.of(this.subject, t.predicate));
                 }
                 this.references.add(rnode);
                 return;
@@ -173,10 +165,6 @@ public class ParsedDocument {
         @Override
         public boolean isEmpty() {
             return super.isEmpty() && references.isEmpty();
-        }
-
-        public void consumeMatchingReferences(NodeWithReferences n, BiConsumer<NodeWithValues, NodeWithValues> match) {
-            consumeMatchingNodes(this.references, n.references, match);
         }
 
         @Override
@@ -324,24 +312,22 @@ public class ParsedDocument {
         }
     }
 
-    private static ImmutableSet<ByteBuffer> stableRefKey(BlankNode n) {
+    private static ImmutableSet<Pair<ByteBuffer,ByteBuffer>> stableRefKey(BlankNode n) {
         return ImmutableSet.copyOf(n.stableReferrers);
     }
 
     public <T extends BlankNode> void matchByStructure(Map<ByteBuffer, T> a, Map<ByteBuffer, T> b) {
-        final Map<Set<ByteBuffer>, Set<T>> aReferrer = a.values().stream()
+        final Map<Set<Pair<ByteBuffer,ByteBuffer>>, Set<T>> aReferrer = a.values().stream()
                 .collect(Collectors.toMap(ParsedDocument::stableRefKey, Collections::singleton, Sets::union));
-        final Map<Set<ByteBuffer>, Set<T>> bReferrer = b.values().stream()
+        final Map<Set<Pair<ByteBuffer,ByteBuffer>>, Set<T>> bReferrer = b.values().stream()
                 .collect(Collectors.toMap(ParsedDocument::stableRefKey, Collections::singleton, Sets::union));
 
-        for (Map.Entry<Set<ByteBuffer>, Set<T>> aEntry : aReferrer.entrySet()) {
+        for (Map.Entry<Set<Pair<ByteBuffer, ByteBuffer>>, Set<T>> aEntry : aReferrer.entrySet()) {
             final Set<T> aCandidates = aEntry.getValue();
             final Set<T> bCandidates = bReferrer.get(aEntry.getKey());
             if (bCandidates == null) continue;
 
             // match best by content
-            final Optional<T> aEmpty = aCandidates.stream().filter(T::isEmpty).findAny();
-            final Optional<T> bEmpty = bCandidates.stream().filter(T::isEmpty).findAny();
             for (T aNode : aCandidates) {
                 long best = 0;
                 ArrayList<T> bestNodes = new ArrayList<>();
@@ -358,30 +344,19 @@ public class ParsedDocument {
                 }
 
                 for (T bNode : bestNodes) {
+                    if (best == 0 && !bNode.isEmpty() && !aNode.isEmpty()) continue;
                     a.remove(aNode.subject);
                     b.remove(bNode.subject);
                     aNode.matchedNode = bNode;
                     bNode.matchedNode = aNode;
-                }
-
-                // match to any empty node if there is one
-                // it doesn't matter which one because the referrer set is the same, so all empty nodes are equal
-                if (bEmpty.isPresent()) {
-                    final T bNode = bEmpty.get();
-                    a.remove(aNode.subject);
-                    b.remove(bNode.subject);
-                    bNode.matchedNode = aNode;
-                    aNode.matchedNode = bNode;
                 }
             }
-            if (aEmpty.isPresent()) {
-                final T aNode = aEmpty.get();
-                if (!bCandidates.isEmpty()) a.remove(aNode.subject);
+
+            // match unmatched empty nodes in b
+            final Optional<T> anyA = aCandidates.stream().findAny();
+            if (anyA.isPresent()) {
                 for (T bNode : bCandidates) {
-                    if (bNode.matchedNode != null) continue;
-                    b.remove(bNode.subject);
-                    bNode.matchedNode = aNode;
-                    aNode.matchedNode = bNode;
+                    if (bNode.isEmpty() && bNode.matchedNode == null) bNode.matchedNode = anyA.get();
                 }
             }
 
@@ -435,7 +410,7 @@ public class ParsedDocument {
 
     private void filterStableRef(ParsedDocument other) {
         Stream.concat(this.allBNodes.values().stream(), this.allValueNodes.values().stream()).forEach(node -> {
-            node.stableReferrers.removeIf(ref -> this.emptyRef(ref) || other.emptyRef(ref));
+            node.stableReferrers.removeIf(ref -> this.emptyRef(ref.getKey()) || other.emptyRef(ref.getKey()));
         });
     }
 
@@ -454,123 +429,6 @@ public class ParsedDocument {
         // match value nodes and bnodes by structure since they don't have stable identifiers
         matchByStructure(this.unmatchedValueNodes, other.unmatchedValueNodes);
         matchByStructure(this.unmatchedBNodes, other.unmatchedBNodes);
-    }
-
-    private static <T extends BlankNode> void consumeMatchingNodes(Set<T> aCandidates, Set<T> bCandidates, BiConsumer<T,T> match) {
-        final Map<Set<ByteBuffer>, Set<T>> bReferrer = bCandidates
-                .stream()
-                .collect(Collectors.toMap(n -> ImmutableSet.copyOf(n.stableReferrers), Collections::singleton, Sets::union));
-
-        final Map<ByteBuffer, Set<T>> bIndex = bCandidates
-                .stream()
-                .flatMap(n -> n.origOther.stream().map(t -> Pair.of(t.object, n)))
-                .collect(Collectors.toMap(Pair::getKey, x -> Collections.singleton(x.getValue()), Sets::union));
-
-        // match by unique referrer or object
-        final Map<ByteBuffer, Set<T>> aIndex = new HashMap<>();
-        for (Iterator<T> it = aCandidates.iterator(); it.hasNext(); ) {
-            T aNode = it.next();
-
-            if (aNode.matchedNode != null && bCandidates.remove(aNode.matchedNode)) {
-                it.remove();
-                match.accept(aNode, (T)aNode.matchedNode);
-                continue;
-            }
-
-            final Set<ByteBuffer> aReferrers = ImmutableSet.copyOf(aNode.stableReferrers);
-            final Set<T> refmatches = bReferrer.get(aReferrers);
-            if (refmatches != null && refmatches.size() == 1) {
-                it.remove();
-                final T bNode = refmatches.iterator().next();
-                bCandidates.remove(bNode);
-                match.accept(aNode, bNode);
-                continue;
-            }
-
-            for (Triple t : aNode.origOther) {
-                final Set<T> matches = bIndex.get(t.object);
-                if (matches != null && matches.size() == 1) {
-                    final T bNode = matches.iterator().next();
-                    it.remove();
-                    bCandidates.remove(bNode);
-                    match.accept(aNode, bNode);
-                    break;
-                }
-                aIndex.computeIfAbsent(t.object, k -> new HashSet<>()).add(aNode);
-            }
-        }
-
-        // match by unique combination of objects
-        final Pair<Set<T>, Set<T>> initialPartition = Pair.of(
-                new HashSet<>(aCandidates),
-                new HashSet<>(bCandidates)
-        );
-        if (resolveMatching(initialPartition, aCandidates, bCandidates, match)) {
-            return;
-        }
-
-        List<Pair<Set<T>, Set<T>>> partitions = Collections.singletonList(initialPartition);
-        for (Map.Entry<ByteBuffer, Set<T>> entry : aIndex.entrySet()) {
-            final Set<T> matchAs = entry.getValue();
-            final Set<T> matchBs = bIndex.get(entry.getKey());
-            if (matchBs == null) continue;
-
-            List<Pair<Set<T>, Set<T>>> newPartitions = new ArrayList<>();
-            for (Pair<Set<T>, Set<T>> partition : partitions) {
-                final Pair<Set<T>, Set<T>> matching = Pair.of(
-                        Sets.intersection(partition.getLeft(), matchAs),
-                        Sets.intersection(partition.getRight(), matchBs)
-                );
-                final Pair<Set<T>, Set<T>> other = Pair.of(
-                        Sets.difference(partition.getLeft(), matchAs),
-                        Sets.difference(partition.getRight(), matchBs)
-                );
-
-                // if this split only causes unmatchable partitions, ignore it
-                if (matching.getLeft().size() * matching.getRight().size() == 0
-                        && other.getLeft().size() * other.getRight().size() == 0) {
-                    newPartitions.add(partition);
-                    continue;
-                }
-
-                if (!resolveMatching(matching, aCandidates, bCandidates, match)) {
-                    newPartitions.add(matching);
-                }
-                if (!resolveMatching(other, aCandidates, bCandidates, match)) {
-                    newPartitions.add(other);
-                }
-            }
-            partitions = newPartitions;
-            if (partitions.isEmpty()) break;
-        }
-    }
-
-    private static <T extends BlankNode> void consumeMatchingNodes(Map<ByteBuffer, Set<T>> a, Map<ByteBuffer, Set<T>> b, BiConsumer<T, T> match) {
-        for (Iterator<Map.Entry<ByteBuffer, Set<T>>> it = a.entrySet().iterator(); it.hasNext(); ) {
-            final Map.Entry<ByteBuffer, Set<T>> groupEntry = it.next();
-            final Set<T> aCandidates = groupEntry.getValue();
-            final Set<T> bCandidates = b.get(groupEntry.getKey());
-
-            if (bCandidates == null) continue;
-
-            if (aCandidates.size() == 1 && bCandidates.size() == 1) {
-                match.accept(aCandidates.iterator().next(), bCandidates.iterator().next());
-                b.remove(groupEntry.getKey());
-                it.remove();
-                continue;
-            }
-
-            // slow path, try to disambiguate
-            consumeMatchingNodes(aCandidates, bCandidates, match);
-
-            if (bCandidates.isEmpty()) {
-                b.remove(groupEntry.getKey());
-            }
-
-            if (aCandidates.isEmpty()) {
-                it.remove();
-            }
-        }
     }
 
     public static boolean parse(final byte[] doc, ParsedDocument parsed) {
