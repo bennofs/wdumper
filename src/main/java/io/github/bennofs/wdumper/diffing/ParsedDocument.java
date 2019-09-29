@@ -20,6 +20,7 @@ public class ParsedDocument {
     public static class BlankNode {
         final ByteBuffer subject;
         public boolean orphan = false;
+        boolean diffed = false;
         Set<Triple> links = new HashSet<>();
         final Set<Triple> other = new HashSet<>();
         final Set<Triple> origOther = new HashSet<>();
@@ -47,6 +48,8 @@ public class ParsedDocument {
         }
 
         public void matchOther(BlankNode b) {
+            diffed = true;
+            b.diffed = true;
             other.removeIf(b.other::remove);
         }
 
@@ -60,6 +63,8 @@ public class ParsedDocument {
         }
 
         public void reset() {
+            if (!diffed) return;
+            diffed = false;
             this.other.clear();
             this.other.addAll(origOther);
         }
@@ -179,11 +184,6 @@ public class ParsedDocument {
     final Map<ByteBuffer, NodeWithValues> allReferences = new HashMap<>();
     final Map<ByteBuffer, NodeWithReferences> allStatements = new HashMap<>();
 
-    private final Map<ByteBuffer, BlankNode> unmatchedBNodes = new HashMap<>();
-    private final Map<ByteBuffer, Node> unmatchedValueNodes = new HashMap<>();
-    private final Map<ByteBuffer, NodeWithValues> unmatchedReferences = new HashMap<>();
-    private final Map<ByteBuffer, NodeWithReferences> unmatchedStatements = new HashMap<>();
-
     private ByteBuffer origRawDoc = ByteBuffer.allocate(0);
     private String id;
 
@@ -237,17 +237,6 @@ public class ParsedDocument {
         root.add(this, t);
     }
 
-    public void consumeMatchingStatements(ParsedDocument other, BiConsumer<NodeWithReferences, NodeWithReferences> consumer) {
-        for (Iterator<Map.Entry<ByteBuffer, NodeWithReferences>> it = allStatements.entrySet().iterator(); it.hasNext(); ) {
-            final Map.Entry<ByteBuffer, NodeWithReferences> entry = it.next();
-            final NodeWithReferences otherStmt = other.allStatements.remove(entry.getKey());
-            if (otherStmt == null) continue;
-
-            it.remove();
-            consumer.accept(entry.getValue(), otherStmt);
-        }
-    }
-
     public Node getRoot() {
         return root;
     }
@@ -267,45 +256,10 @@ public class ParsedDocument {
         return this.origRawDoc.asReadOnlyBuffer();
     }
 
-    private static <T extends BlankNode> boolean allEqualOthers(Collection<T> c) {
-        final Optional<T> first = c.stream().filter(n -> !n.isEmpty()).findFirst();
-
-        return c.stream().allMatch(n -> n.isEmpty() || n.origOther.equals(first.get().origOther));
-    }
-
-    private static <T extends BlankNode> boolean resolveMatching(Pair<Set<T>, Set<T>> matching, Set<T> aCandidates, Set<T> bCandidates, BiConsumer<T, T> match) {
-        final Set<T> matchA = matching.getLeft();
-        final Set<T> matchB = matching.getRight();
-
-        // no match, but also cannot match this any further
-        if (matchA.size() == 0 || matchB.size() == 0) return true;
-
-        // can only match if both sides contain equal nodes
-        if (allEqualOthers(matchA) && allEqualOthers(matchB)) {
-            Iterator<T> aIt = matchA.iterator();
-            Iterator<T> bIt = matchB.iterator();
-            while (aIt.hasNext() && bIt.hasNext()) {
-                final T aNode = aIt.next();
-                final T bNode = bIt.next();
-                aCandidates.remove(aNode);
-                bCandidates.remove(bNode);
-                match.accept(aNode, bNode);
-            }
-
-            // match resolved
-            return true;
-        }
-
-        // no match, add it to queue again
-        return false;
-    }
-
     private static <T extends BlankNode> void matchBySubject(Map<ByteBuffer, T> a, Map<ByteBuffer, T> b) {
-        for (Iterator<T> aNodeIt = a.values().iterator(); aNodeIt.hasNext(); ) {
-            final T aNode = aNodeIt.next();
-            final T bNode = b.remove(aNode.subject);
+        for (T aNode : a.values()) {
+            final T bNode = b.get(aNode.subject);
             if (bNode != null) {
-                aNodeIt.remove();
                 aNode.matchedNode = bNode;
                 bNode.matchedNode = aNode;
             }
@@ -345,8 +299,6 @@ public class ParsedDocument {
 
                 for (T bNode : bestNodes) {
                     if (best == 0 && !bNode.isEmpty() && !aNode.isEmpty()) continue;
-                    a.remove(aNode.subject);
-                    b.remove(bNode.subject);
                     aNode.matchedNode = bNode;
                     bNode.matchedNode = aNode;
                 }
@@ -396,13 +348,6 @@ public class ParsedDocument {
         return true;
     }
 
-    private void fillUnmatched() {
-        this.unmatchedBNodes.putAll(this.allBNodes);
-        this.unmatchedValueNodes.putAll(this.allValueNodes);
-        this.unmatchedReferences.putAll(this.allReferences);
-        this.unmatchedStatements.putAll(this.allStatements);
-    }
-
     private boolean emptyRef(ByteBuffer ref) {
         final Node n = this.allReferences.getOrDefault(ref, this.allStatements.get(ref));
         return n != null && n.isEmpty();
@@ -415,20 +360,17 @@ public class ParsedDocument {
     }
 
     public void matchNodes(ParsedDocument other) {
-        this.fillUnmatched();
-        other.fillUnmatched();
-
         // match statements and references by ID
-        matchBySubject(this.unmatchedStatements, other.unmatchedStatements);
-        matchBySubject(this.unmatchedReferences, other.unmatchedReferences);
+        matchBySubject(this.allStatements, other.allStatements);
+        matchBySubject(this.allReferences, other.allReferences);
 
         // filter stable references
         this.filterStableRef(other);
         other.filterStableRef(this);
 
         // match value nodes and bnodes by structure since they don't have stable identifiers
-        matchByStructure(this.unmatchedValueNodes, other.unmatchedValueNodes);
-        matchByStructure(this.unmatchedBNodes, other.unmatchedBNodes);
+        matchByStructure(this.allValueNodes, other.allValueNodes);
+        matchByStructure(this.allBNodes, other.allBNodes);
     }
 
     public static boolean parse(final byte[] doc, ParsedDocument parsed) {
