@@ -1,0 +1,18 @@
+{
+  "statements": [
+    {
+      "id": 0,
+      "references": false,
+      "simple": true,
+      "qualifiers": false,
+      "full": false
+    }
+  ],
+  "truthy": true,
+  "aliases": true,
+  "entities": [],
+  "sitelinks": false,
+  "meta": false,
+  "descriptions": true,
+  "labels": true
+}
