@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.github.luben.zstd.ZstdInputStream;
 import io.github.bennofs.wdumper.diffing.Diff;
+import io.github.bennofs.wdumper.diffing.ParsedDocument;
 import io.github.bennofs.wdumper.diffing.RawDiffingProcessor;
 import io.github.bennofs.wdumper.diffing.Utils;
 import io.github.bennofs.wdumper.ext.StreamDumpFile;
@@ -45,6 +46,12 @@ public class CliComparer implements Runnable {
             Files.write(diffDir.resolve("dump.nt"), Utils.bufferBytes(d.docDump.getOrigRawDoc()));
             Files.write(diffDir.resolve("generated.nt"), Utils.bufferBytes(d.docSerialized.getOrigRawDoc()));
             Files.write(diffDir.resolve("entity.json"), jsonDoc);
+
+            try (BufferedWriter memo = Files.newBufferedWriter(diffDir.resolve("memo.csv"))) {
+                for (ParsedDocument.MemoMatch match : d.docDump.getMemoMatches()) {
+                    memo.write(Utils.bufferString(match.from) + "," + Utils.bufferString(match.to) + "\n");
+                }
+            }
 
             int idx = 0;
             for (Diff.Difference difference : d.differences) {

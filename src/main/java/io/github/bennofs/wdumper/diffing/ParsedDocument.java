@@ -10,7 +10,6 @@ import org.eclipse.rdf4j.rio.ntriples.NTriplesUtil;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
-import java.util.function.BiConsumer;
 import java.util.regex.MatchResult;
 import java.util.regex.Matcher;
 import java.util.stream.Collectors;
@@ -51,6 +50,9 @@ public class ParsedDocument {
             diffed = true;
             b.diffed = true;
             other.removeIf(b.other::remove);
+
+            other.removeIf(t -> b.origOther.stream().anyMatch(t::approxEquals));
+            b.other.removeIf(t -> origOther.stream().anyMatch(t::approxEquals));
         }
 
         Stream<BlankNode> getLinked() {
@@ -283,12 +285,12 @@ public class ParsedDocument {
 
             // match best by content
             for (T aNode : aCandidates) {
-                long best = 0;
+                long best = Long.MAX_VALUE;
                 ArrayList<T> bestNodes = new ArrayList<>();
                 final Set<ByteBuffer> objects = aNode.origOther.stream().map(t -> t.object).collect(Collectors.toSet());
                 for (T bNode : bCandidates) {
-                    long score = bNode.origOther.stream().filter(t -> objects.contains(t.object)).count();
-                    if (score > best) {
+                    long score = bNode.origOther.stream().filter(t -> !objects.contains(t.object)).count();
+                    if (score < best) {
                         bestNodes.clear();
                         best = score;
                     }
@@ -298,7 +300,11 @@ public class ParsedDocument {
                 }
 
                 for (T bNode : bestNodes) {
-                    if (best == 0 && !bNode.isEmpty() && !aNode.isEmpty()) continue;
+                    final boolean anyMatch = bNode.origOther.stream().anyMatch(t -> objects.contains(t.object));
+                    if (!anyMatch && !bNode.isEmpty() && !aNode.isEmpty()) continue;
+                    if (anyMatch) {
+                        matchedValueNodes.put(aNode.subject, bNode.subject);
+                    }
                     aNode.matchedNode = bNode;
                     bNode.matchedNode = aNode;
                 }
@@ -359,10 +365,48 @@ public class ParsedDocument {
         });
     }
 
+    private static HashMap<ByteBuffer, ByteBuffer> matchedValueNodes = new HashMap<>();
+
+    private HashSet<ByteBuffer> matchedNodes = new HashSet<>();
+
+    private <T extends BlankNode> void matchMemorized(Map<ByteBuffer, T> a, Map<ByteBuffer, T> b) {
+        for (Iterator<T> aNodeIt = a.values().iterator(); aNodeIt.hasNext(); ) {
+            final T aNode = aNodeIt.next();
+            final ByteBuffer bSubject = matchedValueNodes.get(aNode.subject);
+            if (bSubject == null) continue;
+            final T bNode = b.remove(bSubject);
+            if (bNode == null) continue;
+
+            this.matchedNodes.add(aNode.subject);
+            aNodeIt.remove();
+            aNode.matchedNode = bNode;
+            bNode.matchedNode = aNode;
+        }
+    }
+
+    public static class MemoMatch {
+        public final ByteBuffer from;
+        public final ByteBuffer to;
+
+        public MemoMatch(ByteBuffer from, ByteBuffer to) {
+            this.from = from;
+            this.to = to;
+        }
+    }
+
+    public List<MemoMatch> getMemoMatches() {
+        return this.matchedNodes.stream().map(subject ->
+                new MemoMatch(subject, matchedValueNodes.get(subject))
+        ).collect(Collectors.toList());
+    }
+
     public void matchNodes(ParsedDocument other) {
         // match statements and references by ID
         matchBySubject(this.allStatements, other.allStatements);
         matchBySubject(this.allReferences, other.allReferences);
+
+        // match by memorized matches
+        matchMemorized(this.allValueNodes, other.allValueNodes);
 
         // filter stable references
         this.filterStableRef(other);

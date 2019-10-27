@@ -90,6 +90,8 @@ public class Utils {
         urlEscapeDecode.put(StandardCharsets.US_ASCII.encode("%7B"), StandardCharsets.US_ASCII.encode("{").get());
         urlEscapeDecode.put(StandardCharsets.US_ASCII.encode("%7C"), StandardCharsets.US_ASCII.encode("|").get());
         urlEscapeDecode.put(StandardCharsets.US_ASCII.encode("%7D"), StandardCharsets.US_ASCII.encode("}").get());
+        urlEscapeDecode.put(StandardCharsets.US_ASCII.encode("%60"), StandardCharsets.US_ASCII.encode("`").get());
+        urlEscapeDecode.put(StandardCharsets.US_ASCII.encode("%5E"), StandardCharsets.US_ASCII.encode("^").get());
 
         // these are standard
         urlEscapeDecode.put(StandardCharsets.US_ASCII.encode("%3A"), StandardCharsets.US_ASCII.encode(":").get());

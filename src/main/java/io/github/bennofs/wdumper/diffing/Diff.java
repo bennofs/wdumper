@@ -1,5 +1,7 @@
 package io.github.bennofs.wdumper.diffing;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableSet;
 
 import java.util.ArrayList;
@@ -12,7 +14,14 @@ public class Diff {
         public final Set<Triple> inDump;
         public final Set<Triple> inSerialized;
 
-        public Difference(String tag, Set<Triple> inDump, Set<Triple> inSerialized) {
+        @JsonCreator
+        public Difference(
+                @JsonProperty("tag")
+                String tag,
+                @JsonProperty("inDump")
+                Set<Triple> inDump,
+                @JsonProperty("inSerialized")
+                Set<Triple> inSerialized) {
             this.tag = tag;
             this.inDump = ImmutableSet.copyOf(inDump);
             this.inSerialized = ImmutableSet.copyOf(inSerialized);
