@@ -2,6 +2,14 @@
 
 @font-size-small: 0.9em;
 
+/* general element styles */
+table {
+    td, th {
+        padding: 0rem 1rem 0.7rem 0rem;
+        vertical-align: top;
+    }
+}
+
 /* page layout (bar, main, sections) */
 main, header {
     max-width: 60em;
@@ -78,7 +86,6 @@ h2 {
     border-radius: @border-radius-base;
     box-shadow: @box-shadow-card;
     padding-bottom: 1rem;
-    max-width: 50em;
     margin-bottom: 0.5rem;
     min-height: 3rem;
     position: relative;
@@ -149,8 +156,7 @@ h2 {
     }
 }
 
-
-
+/* input field (text) with icon */
 .img-input {
     border: @border-base;
     :hover {
@@ -172,6 +178,46 @@ h2 {
     }
 }
 
+/* a link that serves as a button  */
+.link-button {
+    margin-right: 1rem;
+
+    :visited, &, img {
+        display: inline-flex;
+        align-items: center;
+        color: @color-primary;
+        fill: @color-primary;
+        text-decoration: none;
+        font-size: @font-size-small;
+    }
+
+    &:hover {
+        text-decoration: underline;
+        cursor: pointer;
+    }
+}
+
+/* an button that looks like an icon  */
+.img-button {
+    opacity: 0.3;
+    margin-left: 0.5rem;
+
+    :visited, &, img {
+        color: @color-primary;
+        font-size: @font-size-small;
+    }
+
+    img {
+        vertical-align: text-bottom;
+    }
+
+    &:hover {
+        opacity: 1;
+        cursor: pointer;
+    }
+}
+
+/* a tag in a tag list */
 .tag {
     margin-right: 0.25rem;
     background-color: @background-color-tabs;
@@ -188,49 +234,10 @@ h2 {
     }
 }
 
-
+/* controls below a section */
 .controls-add {
     margin-top: 0.5rem;
 }
-
-.link-button {
-    margin-right: 1rem; 
-
-    :visited, &, img {
-        display: inline-flex;
-        align-items: center;
-        color: @color-primary;
-        fill: @color-primary;
-        text-decoration: none;
-        font-size: @font-size-small;
-    }
-
-    &:hover {
-        text-decoration: underline;    
-        cursor: pointer;
-    }
-}
-
-.img-button {
-    opacity: 0.3;
-    margin-left: 0.5rem;
-    
-    :visited, &, img {
-        color: @color-primary;
-        font-size: @font-size-small;
-    }
-
-    img {
-        vertical-align: text-bottom;
-    }
-
-    &:hover {
-        opacity: 1;
-        text-decoration: underline;    
-        cursor: pointer;
-    }
-}
-
 
 button.submit {
     width: 100%;
@@ -349,10 +356,6 @@ button.submit {
 
 #submit {
     font-size: 1.2rem;
-}
-
-td {
-    padding: 0rem 1rem 0.7rem 0rem;
 }
 
 /* temporary rules for experiments */

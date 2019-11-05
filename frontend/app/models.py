@@ -1,7 +1,7 @@
 import enum
 from flask import url_for
 from datetime import datetime, timedelta
-from sqlalchemy.sql import func, and_
+from sqlalchemy.sql import func, and_, or_
 
 from app import db
 import config
@@ -10,6 +10,15 @@ class ErrorLevel(enum.Enum):
     CRITICAL = 0,
     ERROR = 1,
     WARNING = 2
+
+    def name(self):
+        NAMES = {
+            ErrorLevel.CRITICAL: "critical",
+            ErrorLevel.ERROR: "error",
+            ErrorLevel.WARNING: "warning",
+        }
+        return NAMES[self]
+
 
 class ZenodoTarget(enum.Enum):
     SANDBOX = 0
@@ -55,6 +64,16 @@ class Dump(db.Model):
     def has_zenodo(self, target):
         return Zenodo.query.filter_by(dump_id=self.id, target=target).limit(1).count() > 0
 
+    @property
+    def has_errors(self):
+        return bool(self.errors)
+
+    @property
+    def errors(self):
+        return DumpError.query.filter(or_(
+            DumpError.run_id == self.run_id,
+            DumpError.dump_id == self.id
+        )).all()
 
 class Zenodo(db.Model):
     id = db.Column(db.Integer, primary_key=True, nullable=False)
@@ -103,3 +122,11 @@ class DumpError(db.Model):
     zenodo_id = db.Column(db.Integer, db.ForeignKey("zenodo.id"), nullable=True)
     level = db.Column(db.Enum(ErrorLevel), nullable=False)
     message = db.Column(db.Text, nullable=False)
+
+    @property
+    def category(self):
+        if self.dump_id is None:
+            return "run"
+        if self.zenodo_id is not None:
+            return "upload"
+        return "dump"
