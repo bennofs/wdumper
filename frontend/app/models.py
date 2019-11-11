@@ -71,7 +71,7 @@ class Dump(db.Model):
     @property
     def errors(self):
         return DumpError.query.filter(or_(
-            DumpError.run_id == self.run_id,
+            and_(self.run_id != None, DumpError.run_id == self.run_id),
             DumpError.dump_id == self.id
         )).all()
 
