@@ -11,3 +11,7 @@ DB_URI = "mysql+mysqldb://{}@{}/{}".format(DB_USER + (":" + DB_PASSWORD if DB_PA
 DUMPS_PATH = os.getenv("DUMPS_PATH", os.path.join(basedir, "dumpfiles/generated"))
 ZENODO_SANDBOX_TOKEN = os.getenv("ZENODO_SANDBOX_TOKEN", "")
 ZENODO_TOKEN = os.getenv("ZENODO_TOKEN", "")
+
+# these two must match the setting for the dump runner
+RECENT_MIN_MINUTES = os.getenv("RECENT_MIN_MINUTES", 20)
+RECENT_MAX_MINUTES = os.getenv("RECENT_MAX_MINUTES", 60)

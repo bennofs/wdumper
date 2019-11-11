@@ -2,6 +2,7 @@ import enum
 from flask import url_for
 from datetime import datetime, timedelta
 from sqlalchemy.sql import func, and_, or_
+from sqlalchemy.ext.hybrid import hybrid_property
 
 from app import db
 import config
@@ -53,7 +54,10 @@ class Dump(db.Model):
     zenodo_sandbox = db.relationship("Zenodo", primaryjoin='and_(Dump.id == Zenodo.dump_id, Zenodo.target=="SANDBOX")', uselist=False)
     zenodo_release = db.relationship("Zenodo", primaryjoin='and_(Dump.id == Zenodo.dump_id, Zenodo.target=="RELEASE")', uselist=False)
 
-    @property
+    @hybrid_property
+    def in_queue(self):
+        return self.run == None
+
     def done(self):
         return self.run is not None and self.run.finished_at is not None
 

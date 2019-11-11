@@ -7,6 +7,7 @@ table {
     td, th {
         padding: 0rem 1rem 0.7rem 0rem;
         vertical-align: top;
+        text-align: right;
     }
 }
 
@@ -47,6 +48,9 @@ header {
 
 main {
     margin-top: 1.5rem;
+    & > p {
+        margin-bottom: 1rem;
+    }
 }
 
 .section {
@@ -356,6 +360,10 @@ button.submit {
 
 #submit {
     font-size: 1.2rem;
+}
+
+.error-message {
+    color: red;
 }
 
 /* temporary rules for experiments */

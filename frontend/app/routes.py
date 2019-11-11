@@ -2,8 +2,9 @@ import json
 import requests
 from flask import render_template, request, jsonify, make_response, send_from_directory, url_for
 from app import app, db
-from app.models import Dump, ZenodoTarget, Zenodo
-from datetime import datetime
+from app.models import Dump, ZenodoTarget, Zenodo, Run
+from datetime import datetime, timedelta
+import sqlalchemy.sql as sql
 
 import config
 
@@ -98,8 +99,53 @@ def zenodo():
 
     return ""
 
+def time_to_age(value):
+    if value is None:
+        return 0
+    return int(datetime.utcnow().timestamp() - value.timestamp())
+
+@app.route("/status", methods=["GET"])
+def status():
+    # collect some status metrics
+    queue_length = Dump.query.filter_by(run=None).count()
+    queue_min_age, queue_max_age = db.session.query(
+        sql.func.min(Dump.created_at),
+        sql.func.max(Dump.created_at)
+    ).filter(Dump.in_queue).one()
+    unfinished_min_age, unfinished_max_age = db.session.query(
+        sql.func.min(Dump.created_at),
+        sql.func.max(Dump.created_at)
+    ).outerjoin(Run).filter(
+        sql.or_(Dump.run == None, Run.finished_at == None)
+    ).one()
+    runs_in_progress = Run.query.filter_by(finished_at=None).count()
+    next_run_min = None
+    next_run_max = None
+    valid_next_run = False
+    if not runs_in_progress:
+        next_run_min = queue_min_age + timedelta(minutes=config.RECENT_MIN_MINUTES)
+        next_run_max = queue_max_age + timedelta(minutes=config.RECENT_MAX_MINUTES)
+        valid_next_run = next_run_min >= datetime.utcnow() and next_run_max >= datetime.utcnow()
+
+    # return as JSON if requested
+    if not request.accept_mimetypes["text/html"]:
+        return json.dumps({
+            "queue_length": queue_length,
+            "queue_max_age": time_to_age(queue_max_age),
+            "unfinished_min_age": time_to_age(unfinished_max_age),
+            "unfinished_max_age": time_to_age(unfinished_max_age),
+            "runs_in_progress": runs_in_progress,
+            "next_run_min": time_to_age(next_run_min),
+            "next_run_max": time_to_age(next_run_max)
+        })
+
+    return render_template("status.html", **locals())
+
 @app.template_filter("timedelta")
-def timedelta(delta):
+def date2delta(delta):
+    if not delta:
+        delta = timedelta()
+
     if isinstance(delta, datetime):
         delta = datetime.utcnow() - delta
     
