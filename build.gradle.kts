@@ -18,6 +18,12 @@ plugins {
 java.sourceCompatibility = JavaVersion.VERSION_1_8
 java.targetCompatibility = JavaVersion.VERSION_1_8
 
+sourceSets.main.configure {
+    resources {
+        output.dir(project.buildDir.resolve("generated/resources"), "builtBy" to "generateResources")
+    }
+}
+
 repositories {
     // Use jcenter for resolving your dependencies.
     // You can declare any Maven/Ivy/file repository here.
@@ -67,4 +73,29 @@ dependencies {
 application {
     // Define the main class for the application
     mainClassName = "io.github.bennofs.wdumper.App"
+}
+
+val generateGitVersion by tasks.registering(Exec::class) {
+    doFirst {
+        val outputDir = project.buildDir.resolve("generated/resources/meta")
+        outputDir.mkdirs()
+        standardOutput = outputDir.resolve("git-version").outputStream()
+    }
+    commandLine("git", "rev-parse", "HEAD")
+}
+
+val generateWDTKVersion by tasks.registering {
+    doLast {
+        val outputDir = project.buildDir.resolve("generated/resources/meta")
+        outputDir.mkdirs()
+        val wdtk_rdf = configurations.runtimeClasspath.get().resolvedConfiguration.firstLevelModuleDependencies.find {
+            it.moduleName == "wdtk-rdf"
+        }
+        outputDir.resolve("wdtk-version").writeText("release-" + wdtk_rdf!!.moduleVersion)
+    }
+}
+
+tasks.register("generateResources") {
+    dependsOn(generateGitVersion)
+    dependsOn(generateWDTKVersion)
 }
