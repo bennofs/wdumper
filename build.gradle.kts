@@ -88,6 +88,20 @@ val generateWDTKVersion by tasks.registering {
     doLast {
         val outputDir = project.buildDir.resolve("generated/resources/meta")
         outputDir.mkdirs()
+
+        val wdtkBuild = gradle.includedBuilds.find {
+            it.name == "wdtk-parent"
+        }
+
+        if (wdtkBuild != null) {
+            project.exec {
+                commandLine("git", "rev-parse", "HEAD")
+                standardOutput = outputDir.resolve("wdtk-version").outputStream()
+                workingDir = wdtkBuild.projectDir
+            }
+            return@doLast
+        }
+
         val wdtk_rdf = configurations.runtimeClasspath.get().resolvedConfiguration.firstLevelModuleDependencies.find {
             it.moduleName == "wdtk-rdf"
         }
