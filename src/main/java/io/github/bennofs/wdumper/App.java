@@ -149,7 +149,7 @@ public class App implements Runnable, Closeable {
     }
 
 
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) {
         final String dbHost = ObjectUtils.defaultIfNull(System.getenv("DB_HOST"), "localhost");
         final String dbName = ObjectUtils.defaultIfNull(System.getenv("DB_NAME"), "wdumper");
         final String dbUser = ObjectUtils.defaultIfNull(System.getenv("DB_USER"), "root");
