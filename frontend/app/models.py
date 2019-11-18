@@ -60,6 +60,7 @@ class Dump(db.Model):
     def in_queue(self):
         return self.run == None
 
+    @property
     def done(self):
         return self.run is not None and self.run.finished_at is not None
 
