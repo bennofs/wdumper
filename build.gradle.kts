@@ -107,7 +107,14 @@ val generateWDTKVersion by tasks.registering {
         val wdtk_rdf = configurations.runtimeClasspath.get().resolvedConfiguration.firstLevelModuleDependencies.find {
             it.moduleName == "wdtk-rdf"
         }
-        outputDir.resolve("wdtk-version").writeText("release-" + wdtk_rdf!!.moduleVersion)
+
+        // if this dependency does not come from jitpack, then prefix "release-" to the version
+        val releasePrefix = if (wdtk_rdf!!.moduleName == "com.github.Wikidata.Wikidata-Toolkit") {
+            ""
+        } else {
+            "release-"
+        };
+        outputDir.resolve("wdtk-version").writeText(releasePrefix + wdtk_rdf.moduleVersion)
     }
 }
 
