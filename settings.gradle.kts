@@ -8,4 +8,3 @@
  */
 
 rootProject.name = "wdumper"
-includeBuild("/code/Wikidata-Toolkit")

@@ -28,6 +28,7 @@ repositories {
     // Use jcenter for resolving your dependencies.
     // You can declare any Maven/Ivy/file repository here.
     jcenter()
+    maven { url = uri("https://jitpack.io") }
 }
 
 dependencies {
@@ -36,9 +37,9 @@ dependencies {
     implementation("org.apache.commons:commons-lang3:3.9")
 
     // Wikidata Toolkit
-    implementation("org.wikidata.wdtk:wdtk-datamodel:0.9.0")
-    implementation("org.wikidata.wdtk:wdtk-dumpfiles:0.9.0")
-    implementation("org.wikidata.wdtk:wdtk-rdf:0.9.0")
+    implementation("com.github.Wikidata.Wikidata-Toolkit:wdtk-datamodel:0afe49fef5")
+    implementation("com.github.Wikidata.Wikidata-Toolkit:wdtk-dumpfiles:0afe49fef5")
+    implementation("com.github.Wikidata.Wikidata-Toolkit:wdtk-rdf:0afe49fef5")
     implementation("info.picocli:picocli:4.0.0-alpha-3")
 
     // For ZSTD dumps
