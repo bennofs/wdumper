@@ -31,4 +31,12 @@ public class StatementFilter {
     public StatementOptions getOptions() {
         return options;
     }
+
+    @Override
+    public String toString() {
+        return MoreObjects.toStringHelper(this)
+                .add("properties", properties)
+                .add("options", options)
+                .toString();
+    }
 }

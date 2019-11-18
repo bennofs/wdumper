@@ -50,7 +50,6 @@ public class StatementOptions {
         return this.full || this.references || this.qualifiers;
     }
 
-
     @Override
     public String toString() {
         return MoreObjects.toStringHelper(this)
