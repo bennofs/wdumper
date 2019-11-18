@@ -18,9 +18,12 @@ import java.io.OutputStream;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
 
 public class FilteredRdfSerializer implements EntityDocumentDumpProcessor {
     private final static Logger logger = LoggerFactory.getLogger(FilteredRdfSerializer.class);
+
+    private final int id;
 
     private final DumpSpec spec;
     private final RdfWriter rdfWriter;
@@ -33,11 +36,15 @@ public class FilteredRdfSerializer implements EntityDocumentDumpProcessor {
     private final RankBuffer rankBuffer = new RankBuffer();
     private int count = 0;
 
+    private AtomicLong includedStatements = new AtomicLong();
+    private AtomicLong includedEntities = new AtomicLong();
+
     private final DumpStatusHandler statusHandler;
     private final OutputStream outputStream;
 
-    public FilteredRdfSerializer(DumpSpec spec, OutputStream output, Sites sites, PropertyRegister propertyRegister, DumpStatusHandler statusHandler) {
+    public FilteredRdfSerializer(DumpSpec spec, int id, OutputStream output, Sites sites, PropertyRegister propertyRegister, DumpStatusHandler statusHandler) {
         this.spec = spec;
+        this.id = id;
         this.rdfWriter = new RdfWriter(spec.getFormat(), output);
         this.sites = sites;
         this.propertyRegister = propertyRegister;
@@ -125,6 +132,7 @@ public class FilteredRdfSerializer implements EntityDocumentDumpProcessor {
 
     public void writeItemDocument(ItemDocument document)
             throws RDFHandlerException {
+        this.includedEntities.incrementAndGet();
 
         String subjectUri = document.getEntityId().getIri();
         Resource subject = this.rdfWriter.getUri(subjectUri);
@@ -147,6 +155,7 @@ public class FilteredRdfSerializer implements EntityDocumentDumpProcessor {
 
     public void writePropertyDocument(PropertyDocument document)
             throws RDFHandlerException {
+        this.includedEntities.incrementAndGet();
 
         propertyRegister.setPropertyType(document.getEntityId(), document
                 .getDatatype().getIri());
@@ -321,6 +330,10 @@ public class FilteredRdfSerializer implements EntityDocumentDumpProcessor {
         String statementUri = Vocabulary.getStatementUri(statement);
         Resource statementResource = this.rdfWriter.getUri(statementUri);
 
+        if (options.isStatement() || options.isSimple()) {
+            this.includedStatements.incrementAndGet();
+        }
+
         if (options.isStatement()) {
             IRI property = this.rdfWriter.getUri(Vocabulary.getPropertyUri(
                     statement.getMainSnak().getPropertyId(), PropertyContext.STATEMENT));
@@ -350,12 +363,10 @@ public class FilteredRdfSerializer implements EntityDocumentDumpProcessor {
     }
 
     void writeSimpleStatement(Resource subject, Statement statement) {
-        if (true) {
-            this.snakRdfConverter.setSnakContext(subject,
-                    PropertyContext.DIRECT);
-            statement.getMainSnak()
-                    .accept(this.snakRdfConverter);
-        }
+        this.snakRdfConverter.setSnakContext(subject,
+                PropertyContext.DIRECT);
+        statement.getMainSnak()
+                .accept(this.snakRdfConverter);
     }
 
     void writeReferences(Resource statementResource,
@@ -481,6 +492,33 @@ public class FilteredRdfSerializer implements EntityDocumentDumpProcessor {
         } catch(IOException e) {
             this.statusHandler.reportError(DumpStatusHandler.ErrorLevel.WARNING, "closing the output stream failed: " + e.toString());
         }
+    }
+
+    /**
+     * Returns the number of statements written to the dump.
+     *
+     * A single statement is only counted once, even if both simple and full representations are exported.
+     */
+    public long getStatementCount() {
+        return this.includedStatements.get();
+    }
+
+    /**
+     * Returns the number of entities written to the dump.
+     */
+    public long getEntityCount() {
+        return this.includedEntities.get();
+    }
+
+    /**
+     * Returns the number of triples written to the dump.
+     */
+    public long getTripleCount() {
+        return this.rdfWriter.getTripleCount();
+    }
+
+    public int getDumpId() {
+        return this.id;
     }
 
     void flush() {

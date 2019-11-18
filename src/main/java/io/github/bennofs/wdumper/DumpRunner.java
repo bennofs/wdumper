@@ -1,5 +1,6 @@
 package io.github.bennofs.wdumper;
 
+import com.google.common.collect.ImmutableList;
 import io.github.bennofs.wdumper.interfaces.DumpStatusHandler;
 import io.github.bennofs.wdumper.interfaces.RunnerStatusHandler;
 import io.github.bennofs.wdumper.processors.FilteredRdfSerializer;
@@ -21,6 +22,7 @@ import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Stream;
 
 public class DumpRunner {
     private final int id;
@@ -28,7 +30,7 @@ public class DumpRunner {
     private final MwDumpFile dumpFile;
     private final PropertyRegister propertyRegister;
 
-    private final List<EntityDocumentDumpProcessor> processors;
+    private final List<FilteredRdfSerializer> serializers;
 
     private final Path outputDirectory;
 
@@ -42,7 +44,7 @@ public class DumpRunner {
         this.controller = controller;
         this.propertyRegister = propertyRegister;
 
-        this.processors = new ArrayList<EntityDocumentDumpProcessor>();
+        this.serializers = new ArrayList<>();
 
         this.outputDirectory = outputDirectory;
     }
@@ -67,25 +69,27 @@ public class DumpRunner {
     void addDumpTask(int id, DumpSpec spec, DumpStatusHandler statusHandler) throws IOException {
         final OutputStream output = openGzipOutput(getOutputPath(this.outputDirectory, id));
 
-        FilteredRdfSerializer serializer = new FilteredRdfSerializer(spec, output, controller.getSitesInformation(), propertyRegister, statusHandler);
-        this.processors.add(serializer);
+        FilteredRdfSerializer serializer = new FilteredRdfSerializer(spec, id, output, controller.getSitesInformation(), propertyRegister, statusHandler);
+        this.serializers.add(serializer);
     }
 
     public void run(RunnerStatusHandler runnerStatusHandler) {
-        this.processors.add(new ProgressReporter(60, runnerStatusHandler));
+        final EntityDocumentDumpProcessor progressProcessor = new ProgressReporter(Constants.PROGRESS_INTERVAL, runnerStatusHandler);
 
-        for (EntityDocumentDumpProcessor processor : processors) {
+        Stream.concat(serializers.stream(), Stream.of(progressProcessor)).forEach(processor -> {
             processor.open();
             controller.registerEntityDocumentProcessor(processor, null, true);
-        }
+        });
 
         runnerStatusHandler.start();
         controller.processDump(this.dumpFile);
         runnerStatusHandler.done();
 
-        for (EntityDocumentDumpProcessor processor : processors) {
-            processor.close();
-        }
+        Stream.concat(serializers.stream(), Stream.of(progressProcessor)).forEach(EntityDocumentDumpProcessor::close);
+    }
+
+    public List<FilteredRdfSerializer> getSerializers() {
+        return ImmutableList.copyOf(this.serializers);
     }
 
     public int getId() {

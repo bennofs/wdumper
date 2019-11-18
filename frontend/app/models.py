@@ -49,6 +49,8 @@ class Dump(db.Model):
     run_id = db.Column(db.Integer, db.ForeignKey("run.id"), nullable=True)
     compressed_size = db.Column(db.Integer, server_default=db.text("0"), nullable=False)
     entity_count = db.Column(db.Integer, server_default=db.text("0"), nullable=False)
+    statement_count = db.Column(db.Integer, nullable=False, server_default=db.text("0"))
+    triple_count = db.Column(db.Integer, nullable=False, server_default=db.text("0"))
 
     run = db.relationship("Run")
     zenodo_sandbox = db.relationship("Zenodo", primaryjoin='and_(Dump.id == Zenodo.dump_id, Zenodo.target=="SANDBOX")', uselist=False)
@@ -97,8 +99,6 @@ class Run(db.Model):
     started_at = db.Column(db.TIMESTAMP, nullable=True)
     finished_at = db.Column(db.TIMESTAMP, nullable=True)
     count = db.Column(db.Integer, nullable=False, server_default=db.text("0"))
-    dump_items = db.Column(db.Integer, nullable=False, server_default=db.text("0"))
-    dump_statements = db.Column(db.Integer, nullable=False, server_default=db.text("0"))
     tool_version = db.Column(db.Text, nullable=True)
     wdtk_version = db.Column(db.Text, nullable=True)
 

@@ -9,4 +9,6 @@ public class Constants {
     public static final int RECENT_MIN_MINUTES = 20;
     // only process dump tasks at least this new
     public static final int RECENT_MAX_MINUTES = 60;
+    // interval for updating the progress of the current run
+    public static final int PROGRESS_INTERVAL = 60;
 }

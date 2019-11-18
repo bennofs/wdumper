@@ -101,6 +101,15 @@ public class Database {
                 .execute();
     }
 
+    public void setDumpStatistics(Handle handle, int dumpId, long entityCount, long statementCount, long tripleCount) {
+        handle.createUpdate("UPDATE dump SET entity_count = :entity_count, statement_count = :statement_count, triple_count = :triple_count WHERE id = :id")
+                .bind("id", dumpId)
+                .bind("entity_count", entityCount)
+                .bind("statement_count", statementCount)
+                .bind("triple_count", tripleCount)
+                .execute();
+    }
+
     public List<ZenodoTask> getZenodoTasks(Handle handle, int amount) {
         // find tasks
         final Stream<ZenodoTask> tasks = handle.createQuery("SELECT zenodo.id, zenodo.deposit_id, zenodo.dump_id, zenodo.target " +

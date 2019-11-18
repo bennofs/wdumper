@@ -8,6 +8,7 @@ import io.github.bennofs.wdumper.database.ZenodoTask;
 import io.github.bennofs.wdumper.ext.ZstdDumpFile;
 import io.github.bennofs.wdumper.interfaces.DumpStatusHandler;
 import io.github.bennofs.wdumper.interfaces.RunnerStatusHandler;
+import io.github.bennofs.wdumper.processors.FilteredRdfSerializer;
 import io.github.bennofs.wdumper.spec.DumpSpec;
 import io.github.bennofs.wdumper.zenodo.Deposit;
 import io.github.bennofs.wdumper.zenodo.Zenodo;
@@ -106,7 +107,14 @@ public class App implements Runnable, Closeable {
 
             @Override
             public void reportProgress(int count) {
-                db.useHandle(handle -> db.setProgress(handle, runner.getId(), count));
+                db.useHandle(handle -> {
+                    db.setProgress(handle, runner.getId(), count);
+                    // update statistics for all dumps
+                    for (FilteredRdfSerializer serializer : runner.getSerializers()) {
+                        db.setDumpStatistics(handle, serializer.getDumpId(), serializer.getEntityCount(), serializer.getStatementCount(), serializer.getTripleCount());
+
+                    }
+                });
             }
 
             @Override
