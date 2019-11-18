@@ -5,15 +5,16 @@ import io.github.bennofs.wdumper.ext.ZstdDumpFile;
 import io.github.bennofs.wdumper.interfaces.DumpStatusHandler;
 import io.github.bennofs.wdumper.interfaces.RunnerStatusHandler;
 import io.github.bennofs.wdumper.spec.DumpSpec;
-import org.wikidata.wdtk.util.Timer;
 import picocli.CommandLine;
 
 import java.io.IOException;
-import java.net.URI;
 import java.nio.file.FileSystems;
 import java.nio.file.Path;
 
-public class CliRunner implements Runnable {
+/**
+ * Provides a simple CLI interface to test the dump generation and generate single dumps from a spec.
+ */
+public class Cli implements Runnable {
     @CommandLine.Parameters(paramLabel = "DUMP", arity = "1", index = "0", description = "JSON dump from wikidata to process")
     private Path dumpFilePath;
 
@@ -60,6 +61,6 @@ public class CliRunner implements Runnable {
     }
 
     public static void main(String[] args) {
-        new CommandLine(new CliRunner()).execute(args);
+        new CommandLine(new Cli()).execute(args);
     }
 }

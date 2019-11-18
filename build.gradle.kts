@@ -89,6 +89,7 @@ val generateWDTKVersion by tasks.registering {
         val outputDir = project.buildDir.resolve("generated/resources/meta")
         outputDir.mkdirs()
 
+        // if the build is using a local, substituted version of wdtk, get the git revision
         val wdtkBuild = gradle.includedBuilds.find {
             it.name == "wdtk-parent"
         }
