@@ -1,6 +1,8 @@
 import json
 import requests
-from flask import render_template, request, jsonify, make_response, send_from_directory, url_for
+from flask import render_template, render_template_string, request, jsonify, make_response, send_from_directory, url_for
+from markupsafe import Markup
+from urllib.parse import quote
 from app import app, db
 from app.models import Dump, ZenodoTarget, Zenodo, Run
 from datetime import datetime, timedelta
@@ -165,3 +167,15 @@ def date2delta(delta):
         return "{}m:{:02}s".format(minutes, seconds)
 
     return "{:02} secs".format(seconds)
+
+@app.template_filter("ghversion")
+def ghversion(version, user, project):
+    version = version.strip()
+    if version.startswith("release-"):
+        name = version
+        link = "https://github.com/" + quote(user) + "/" + quote(project) + "/releases/" + version[8:]
+    else:
+        name = "git-" + version[:10]
+        link = "https://github.com/" + quote(user) + "/" + quote(project) + "/commit/" + version
+
+    return Markup(render_template_string('<a href="{{link}}"><code>{{name}}</code></a>', **locals()))

@@ -39,13 +39,15 @@ public class App implements Runnable, Closeable {
     boolean usageHelpRequested;
 
     private final Database db;
-    private final Uploader uploader;
+    private final Zenodo zenodo;
+    private final Zenodo zenodoSandbox;
     final Object runCompletedEvent;
 
     private App(Database db, Zenodo zenodo, Zenodo zenodoSandbox) {
         this.db = db;
+        this.zenodo = zenodo;
+        this.zenodoSandbox = zenodoSandbox;
         this.runCompletedEvent = new Object();
-        this.uploader = new Uploader(db, zenodo, zenodoSandbox, outputDirectory, runCompletedEvent);
     }
 
     @Override
@@ -53,11 +55,20 @@ public class App implements Runnable, Closeable {
     }
 
     private MwDumpFile openDumpFile() {
-        return new ZstdDumpFile(this.dumpFilePath.toAbsolutePath().toString());
+        Path resolvedPath = dumpFilePath;
+        // resolve the dump file path, if possible
+        // this is necessary to correctly determine the dump date from the filename,
+        // since the filename of the link may be different from the actual dump filename.
+        try {
+            resolvedPath = this.dumpFilePath.toRealPath();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return new ZstdDumpFile(resolvedPath.toString());
     }
 
-    private DumpRunner createRunner(Handle handle, int runId) {
-        final DumpRunner runner = DumpRunner.create(runId, openDumpFile(), outputDirectory);
+    private DumpRunner createRunner(Handle handle, int runId, MwDumpFile dumpFile) {
+        final DumpRunner runner = DumpRunner.create(runId, dumpFile, outputDirectory);
 
         List<DumpTask> tasks = db.fetchDumpTasks(handle, runId);
         final ObjectMapper mapper = new ObjectMapper();
@@ -83,14 +94,15 @@ public class App implements Runnable, Closeable {
     private void processDumps() throws InterruptedException {
         System.out.println("checking for new tasks");
         final DumpRunner runner = this.db.withHandle(t -> t.inTransaction(handle -> {
-            final int runId = db.createRun(handle);
+            final MwDumpFile dumpFile = openDumpFile();
+            final int runId = db.createRun(handle, dumpFile.getDateStamp());
 
             if (!db.claimDumps(handle, runId)) {
                 handle.rollback();
                 return null;
             }
 
-            return createRunner(handle, runId);
+            return createRunner(handle, runId, dumpFile);
         }));
 
         // no new tasks
@@ -129,7 +141,9 @@ public class App implements Runnable, Closeable {
 
     @Override
     public void run() {
-        final Thread uploadThread = new Thread(this.uploader);
+        final Uploader uploader =
+                new Uploader(db, this.zenodo, this.zenodoSandbox, outputDirectory, runCompletedEvent);
+        final Thread uploadThread = new Thread(uploader);
         uploadThread.start();
 
         try {
@@ -158,6 +172,8 @@ public class App implements Runnable, Closeable {
 
 
     public static void main(String[] args) {
+        System.err.println("Backend version " + Constants.TOOL_VERSION + " with WDTK version " + Constants.WDTK_VERSION);
+
         final String dbHost = ObjectUtils.defaultIfNull(System.getenv("DB_HOST"), "localhost");
         final String dbName = ObjectUtils.defaultIfNull(System.getenv("DB_NAME"), "wdumper");
         final String dbUser = ObjectUtils.defaultIfNull(System.getenv("DB_USER"), "root");

@@ -11,7 +11,6 @@
             <img src="{{ url_for('static', filename="icons/download.svg") }}">
             download
         </a>
-
     </p>
 {% elif not dump.run or not dump.run.started_at %}
     <p>
@@ -31,6 +30,21 @@
 </p>
 {% endif %}
 </div>
+
+
+{% if dump.run %}
+<p>
+    <h2>Info</h2>
+    <table>
+        <tr><td>Statement count</td><td>{{dump.statement_count}}</td></tr>
+        <tr><td>Entity count</td><td>{{dump.entity_count}}</td></tr>
+        <tr><td>Triple count</td><td>{{dump.triple_count}}</td></tr>
+        <tr><td>Source dump date</td><td>{{dump.run.dump_date}}</td></tr>
+        <tr><td>Tool version</td><td>{{dump.run.tool_version|ghversion("bennofs", "wdumper")}}</td></tr>
+        <tr><td>Wikidata-Toolkit version</td><td>{{dump.run.wdtk_version|ghversion("Wikidata", "Wikidata-Toolkit")}}</td></tr>
+    </table>
+</p>
+{% endif %}
 
 {% if dump.has_errors %}
 <div class="section">

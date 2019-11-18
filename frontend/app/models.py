@@ -102,6 +102,7 @@ class Run(db.Model):
     count = db.Column(db.Integer, nullable=False, server_default=db.text("0"))
     tool_version = db.Column(db.Text, nullable=True)
     wdtk_version = db.Column(db.Text, nullable=True)
+    dump_date = db.Column(db.Text, nullable=True)
 
     @property
     def estimated_factor(self):

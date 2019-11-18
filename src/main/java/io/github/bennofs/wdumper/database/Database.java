@@ -39,8 +39,11 @@ public class Database {
         this.jdbi.useHandle(callback);
     }
 
-    public int createRun(Handle handle) {
-        return handle.createUpdate("INSERT INTO run () VALUES ()")
+    public int createRun(Handle handle, String dumpVersion) {
+        return handle.createUpdate("INSERT INTO run (tool_version, wdtk_version, dump_date) VALUES (:tool_version, :wdtk_version, :dump_date)")
+                .bind("tool_version", Constants.TOOL_VERSION)
+                .bind("wdtk_version", Constants.WDTK_VERSION)
+                .bind("dump_date", dumpVersion)
                 .executeAndReturnGeneratedKeys("id")
                 .mapTo(Integer.class)
                 .one();

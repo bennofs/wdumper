@@ -37,9 +37,9 @@ dependencies {
     implementation("org.apache.commons:commons-lang3:3.9")
 
     // Wikidata Toolkit
-    implementation("com.github.Wikidata.Wikidata-Toolkit:wdtk-datamodel:0afe49fef5")
-    implementation("com.github.Wikidata.Wikidata-Toolkit:wdtk-dumpfiles:0afe49fef5")
-    implementation("com.github.Wikidata.Wikidata-Toolkit:wdtk-rdf:0afe49fef5")
+    implementation("com.github.Wikidata.Wikidata-Toolkit:wdtk-datamodel:0afe49fef56a6da58a8f8fd3f023a56920c04f3b")
+    implementation("com.github.Wikidata.Wikidata-Toolkit:wdtk-dumpfiles:0afe49fef56a6da58a8f8fd3f023a56920c04f3b")
+    implementation("com.github.Wikidata.Wikidata-Toolkit:wdtk-rdf:0afe49fef56a6da58a8f8fd3f023a56920c04f3b")
     implementation("info.picocli:picocli:4.0.0-alpha-3")
 
     // For ZSTD dumps
@@ -76,11 +76,11 @@ application {
     mainClassName = "io.github.bennofs.wdumper.App"
 }
 
-val generateGitVersion by tasks.registering(Exec::class) {
+val generateToolVersion by tasks.registering(Exec::class) {
     doFirst {
         val outputDir = project.buildDir.resolve("generated/resources/meta")
         outputDir.mkdirs()
-        standardOutput = outputDir.resolve("git-version").outputStream()
+        standardOutput = outputDir.resolve("tool-version").outputStream()
     }
     commandLine("git", "rev-parse", "HEAD")
 }
@@ -104,21 +104,21 @@ val generateWDTKVersion by tasks.registering {
             return@doLast
         }
 
-        val wdtk_rdf = configurations.runtimeClasspath.get().resolvedConfiguration.firstLevelModuleDependencies.find {
+        val wdtkRdf = configurations.runtimeClasspath.get().resolvedConfiguration.firstLevelModuleDependencies.find {
             it.moduleName == "wdtk-rdf"
-        }
+        }!!;
 
         // if this dependency does not come from jitpack, then prefix "release-" to the version
-        val releasePrefix = if (wdtk_rdf!!.moduleName == "com.github.Wikidata.Wikidata-Toolkit") {
+        val releasePrefix = if (wdtkRdf.moduleGroup == "com.github.Wikidata.Wikidata-Toolkit") {
             ""
         } else {
             "release-"
         };
-        outputDir.resolve("wdtk-version").writeText(releasePrefix + wdtk_rdf.moduleVersion)
+        outputDir.resolve("wdtk-version").writeText(releasePrefix + wdtkRdf.moduleVersion)
     }
 }
 
 tasks.register("generateResources") {
-    dependsOn(generateGitVersion)
+    dependsOn(generateToolVersion)
     dependsOn(generateWDTKVersion)
 }

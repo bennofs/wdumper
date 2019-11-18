@@ -1,5 +1,7 @@
 package io.github.bennofs.wdumper;
 
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 
 public class Constants {
@@ -17,4 +19,14 @@ public class Constants {
     public static final int RECENT_MAX_MINUTES = intFromEnv("RECENT_MAX_MINUTES", 60);
     // interval for updating the progress of the current run
     public static final int PROGRESS_INTERVAL = intFromEnv("PROGRESS_INTERVAL", 60);
+
+    private static String readMetaFile(String name, String def) {
+        try {
+            return new String(Constants.class.getResource("/meta/" + name).openStream().readAllBytes(), StandardCharsets.UTF_8);
+        } catch(IOException e) {
+            return def;
+        }
+    }
+    public static final String WDTK_VERSION = readMetaFile("wdtk-version", null).trim();
+    public static final String TOOL_VERSION = readMetaFile("tool-version", null).trim();
 }
