@@ -1,0 +1,42 @@
+{
+  "entities": [
+    {
+      "id": 2,
+      "type": "item",
+      "properties": [
+        {
+          "id": 1,
+          "property": "P31",
+          "type": "entityid",
+          "truthy": false,
+          "value": "Q13442814"
+        }
+      ]
+    }
+  ],
+  "statements": [
+    {
+      "id": 0,
+      "simple": false,
+      "full": false,
+      "references": false,
+      "qualifiers": false
+    },
+    {
+      "id": 3,
+      "simple": true,
+      "full": false,
+      "references": false,
+      "qualifiers": false,
+      "properties": [
+        "P50"
+      ]
+    }
+  ],
+  "labels": true,
+  "descriptions": false,
+  "aliases": false,
+  "truthy": false,
+  "meta": true,
+  "sitelinks": false
+}
