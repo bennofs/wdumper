@@ -24,7 +24,7 @@ public class Database {
 
         this.jdbi.registerRowMapper(FieldMapper.factory(DumpTask.class));
         this.jdbi.registerRowMapper(FieldMapper.factory(ZenodoTask.class));
-
+        this.jdbi.registerRowMapper(FieldMapper.factory(DumpInfo.class));
     }
 
     public Jdbi getJdbi() {
@@ -146,6 +146,14 @@ public class Database {
         return handle.createQuery("SELECT spec FROM dump WHERE id = :id")
                 .bind("id", id)
                 .mapTo(String.class)
+                .one();
+    }
+
+    public DumpInfo getDumpInfo(Handle handle, int id) {
+        return handle.createQuery("SELECT dump.id, run.wdtk_version, run.tool_version, run.dump_date, triple_count, entity_count, statement_count " +
+                "FROM dump INNER JOIN run ON run.id = dump.run_id WHERE dump.id = :id")
+                .bind("id", id)
+                .mapTo(DumpInfo.class)
                 .one();
     }
 

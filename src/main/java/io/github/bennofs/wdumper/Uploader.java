@@ -1,6 +1,8 @@
 package io.github.bennofs.wdumper;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.bennofs.wdumper.database.Database;
+import io.github.bennofs.wdumper.database.DumpInfo;
 import io.github.bennofs.wdumper.database.ZenodoTask;
 import io.github.bennofs.wdumper.interfaces.DumpStatusHandler;
 import io.github.bennofs.wdumper.zenodo.Deposit;
@@ -19,8 +21,10 @@ public class Uploader implements Runnable {
     private final Zenodo zenodoSandbox;
     private final Path outputDirectory;
     private final Object runCompletedEvent;
+    private final ObjectMapper mapper;
 
     public Uploader(Database db, Zenodo zenodo, Zenodo zenodoSandbox, Path outputDirectory, Object runCompletedEvent) {
+        this.mapper = new ObjectMapper();
         this.db = db;
         this.zenodo = zenodo;
         this.zenodoSandbox = zenodoSandbox;
@@ -57,6 +61,9 @@ public class Uploader implements Runnable {
                     deposit.addFile("wdumper-spec.json", dumpSpec, (field, fileName, bytesWritten, totalBytes) -> {
                     });
                 }
+
+                final DumpInfo info = db.withHandle(handle -> db.getDumpInfo(handle, task.dump_id));
+                deposit.addFile("info.json", mapper.writeValueAsString(info), (field, fileName, bytesWritten, totalBytes) -> {});
 
                 try (final UploadProgressMonitor progress = new UploadProgressMonitor(db, task.id)) {
                     deposit.addFile(outputPath.getFileName().toString(), outputPath.toFile(), progress);
