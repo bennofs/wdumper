@@ -97,6 +97,10 @@ class Run(db.Model):
     started_at = db.Column(db.TIMESTAMP, nullable=True)
     finished_at = db.Column(db.TIMESTAMP, nullable=True)
     count = db.Column(db.Integer, nullable=False, server_default=db.text("0"))
+    dump_items = db.Column(db.Integer, nullable=False, server_default=db.text("0"))
+    dump_statements = db.Column(db.Integer, nullable=False, server_default=db.text("0"))
+    tool_version = db.Column(db.Text, nullable=True)
+    wdtk_version = db.Column(db.Text, nullable=True)
 
     @property
     def estimated_factor(self):
