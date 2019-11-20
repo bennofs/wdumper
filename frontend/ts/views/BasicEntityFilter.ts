@@ -13,6 +13,7 @@ class PropertyRestriction {
     readonly propertyEl: HTMLInputElement;
     readonly removeEl: HTMLElement;
     readonly typeRadio: RadioGroup<m.ValueFilter["type"]>;
+    readonly rankRadio: RadioGroup<m.RankFilter>;
 
     readonly canRemove: (id: number) => boolean;
 
@@ -32,6 +33,12 @@ class PropertyRestriction {
             "entityid": "has value",
         }, (ty) => this.setType(ty));
 
+        this.rankRadio = buildRadioGroup({
+            "best-rank": "BestRank",
+            "non-deprecated": "NonDeprecated",
+            "all": "Any"
+        }, (rank) => this.model.rank = rank);
+
         this.propertyEl = el("input", {"type": "text", placeholder: "P31"}) as HTMLInputElement;
         this.propertyEl.addEventListener("change", () => {
             this.model.property = this.propertyEl.value;
@@ -44,11 +51,14 @@ class PropertyRestriction {
         })
         completeWikidata("item", this.valueEl);
 
-        this.el = el("tr", [
-            el("td", this.propertyEl),
-            el("td", this.typeRadio.el),
-            el("td", this.valueEl),
-            el("td", this.removeEl)
+        this.el = el("div.form-line", [
+            el(".span", "property"),
+            this.propertyEl,
+            this.typeRadio.el,
+            this.valueEl,
+            el(".span", "with rank"),
+            this.rankRadio.el,
+            this.removeEl,
         ]);
     }
 
@@ -67,16 +77,17 @@ class PropertyRestriction {
         this.id = model.id;
         this.propertyEl.value = this.model.property;
         this.valueEl.value = this.model.value || "";
+        this.rankRadio.setValue(this.model.rank);
         this.sync();
     }
 
     sync() {
-        this.valueEl.classList.toggle("hide", this.model.type != "entityid");
+        this.valueEl.classList.toggle("invisible", this.model.type != "entityid");
         this.propertyEl.value = this.model.property;
         if (this.model.type == "entityid") {
             this.valueEl.value = this.model.value;
         }
-        this.removeEl.classList.toggle("hide", !this.canRemove(this.id));
+        this.removeEl.classList.toggle("invisible", !this.canRemove(this.id));
         this.typeRadio.setValue(this.model.type);
     }
 }
@@ -120,23 +131,15 @@ export class BasicEntityFilter {
             el(".card-corner", deleteButton),
             el(".card-main",
                el(".form-line", [
-                   el(".form-text", "select "),
+                   el(".form-text", "select"),
                    this.typeRadio.el,
-                   el(".form-text", "which match all of these conditions:")
+                   el(".form-text", "which match all of these conditions:"),
                ]),
-               el("table", 
-                  el("tr",
-                     el("th", "property"),
-                     el("th", "constraint"),
-                     el("th", "value"),
-                     el("th", {"width": "40em"}, "")
-                  ),
-                  this.propertiesEl = list("tbody", PropertyRestriction.bind(
-                      undefined,
-                      (_id: number) => Object.values(this.model.properties).length > 1,
-                      (id: number) => this.remove(id)
-                  ), "id")
-                 ),
+               this.propertiesEl = list("div.card-subsection", PropertyRestriction.bind(
+                   undefined,
+                   (_id: number) => Object.values(this.model.properties).length > 1,
+                   (id: number) => this.remove(id)
+               ), "id"),
                el(".controls-add", addLink)
            )
         ])
@@ -153,8 +156,8 @@ export class BasicEntityFilter {
     add() {
         const initial: m.ValueFilter = m.createWithId({
             property: "",
+            rank: "non-deprecated",
             type: "anyvalue",
-            truthy: false
         });
         this.model.properties[initial.id] = initial;
         this.propertiesEl.update(Object.values(this.model.properties));

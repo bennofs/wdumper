@@ -15,13 +15,14 @@ public class StatementFilter {
     @JsonCreator
     public StatementFilter(
             @JsonProperty(value = "properties") Set<String> properties,
+            @JsonProperty(value = "rank") RankFilter rank,
             @JsonProperty(value = "simple") boolean simple,
             @JsonProperty(value = "full") boolean full,
             @JsonProperty(value = "references") boolean references,
             @JsonProperty(value = "qualifiers") boolean qualifiers
     ) {
         this.properties = properties;
-        this.options = new StatementOptions(simple, full, references, qualifiers);
+        this.options = new StatementOptions(rank, simple, full, references, qualifiers);
     }
 
     public Set<String> getProperties() {

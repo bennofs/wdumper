@@ -19,11 +19,11 @@ public class DumpSpec {
     @JsonProperty
     final private Set<StatementFilter> statements;
     final private HashMap<String, StatementOptions> statementOptions;
-    private StatementOptions statementOptionsAll;
+    private StatementOptions statementOptionsDefault;
     @JsonProperty
     final private Set<String> languages;
 
-    final private boolean truthy;
+    final private String version;
     final private boolean meta;
     final private boolean labels;
     final private boolean descriptions;
@@ -35,34 +35,38 @@ public class DumpSpec {
 
     @JsonCreator
     public DumpSpec(
+            @JsonProperty("version") String version,
             @JsonProperty("entities") EntityFilter[] entities,
             @JsonProperty("statements") Set<StatementFilter> statements,
             @JsonProperty("languages") Set<String> languages,
             @JsonProperty(value = "labels") boolean labels,
             @JsonProperty(value = "descriptions") boolean descriptions,
             @JsonProperty(value = "aliases") boolean aliases,
-            @JsonProperty(value = "truthy", defaultValue = "false") boolean truthy,
             @JsonProperty(value = "meta", defaultValue = "true") boolean meta,
             @JsonProperty(value = "sitelinks", defaultValue = "true") boolean sitelinks
     ) {
         Objects.requireNonNull(entities);
         Objects.requireNonNull(statements);
 
+        this.version = version;
         this.entities = entities;
         this.statements = statements;
         this.languages = languages;
         this.labels = labels;
         this.descriptions = descriptions;
         this.aliases = aliases;
-        this.truthy = truthy;
         this.meta = meta;
         this.sitelinks = sitelinks;
 
-        this.statementOptions = new HashMap<String, StatementOptions>();
-        this.statementOptionsAll = new StatementOptions();
+        this.statementOptions = new HashMap<>();
+        this.statementOptionsDefault = statements.stream()
+                .filter(f -> f.getProperties() == null)
+                .map(StatementFilter::getOptions)
+                .reduce(StatementOptions::union)
+                .orElse(new StatementOptions(RankFilter.BEST_RANK, false, false, false, false));
+
         for (StatementFilter statementFilter : statements) {
             if (statementFilter.getProperties() == null) {
-                statementOptionsAll = statementOptionsAll.union(statementFilter.getOptions());
                 continue;
             }
 
@@ -73,9 +77,6 @@ public class DumpSpec {
         }
     }
 
-    public boolean isTruthy() {
-        return truthy;
-    }
 
     public boolean isMeta() {
         return meta;
@@ -112,8 +113,11 @@ public class DumpSpec {
     }
 
     public StatementOptions findStatementOptions(final String property) {
-        final StatementOptions specific = statementOptions.getOrDefault(property, new StatementOptions());
-        return specific.union(this.statementOptionsAll);
+        return statementOptions.getOrDefault(property, statementOptionsDefault);
+    }
+
+    public boolean hasFullStatements() {
+        return statementOptionsDefault.isStatement() || statementOptions.values().stream().anyMatch(StatementOptions::isStatement);
     }
 
     public boolean includeLanguage(String code) {
@@ -125,13 +129,13 @@ public class DumpSpec {
     @Override
     public String toString() {
         return MoreObjects.toStringHelper(this)
+                .add("version", version)
                 .add("entities", entities)
                 .add("statementOptions", statementOptions)
                 .add("languages", languages)
                 .add("labels", labels)
                 .add("descriptions", descriptions)
                 .add("aliases", aliases)
-                .add("truthy", truthy)
                 .add("meta", meta)
                 .add("sitelinks", sitelinks)
                 .toString();

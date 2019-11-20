@@ -10,10 +10,13 @@ export const { createWithId } = new class {
 export interface ValueFilter {
     id: number;
     property: string;
+    rank: RankFilter;
     type: "novalue" | "somevalue" | "entityid" | "anyvalue" | "any";
     value?: string;
-    truthy: boolean;
+
 }
+
+export type RankFilter = "best-rank" | "non-deprecated" | "all";
 
 export interface EntityFilter {
     id: number;
@@ -23,6 +26,7 @@ export interface EntityFilter {
 
 export interface StatementFilter {
     id: number;
+    rank: RankFilter;
     properties?: string[];
     simple: boolean;
     full: boolean;
@@ -31,6 +35,7 @@ export interface StatementFilter {
 }
 
 export interface DumpSpec {
+    version: String;
     entities: { [id:number]: EntityFilter };
     statements: { [id:number]: StatementFilter };
     languages?: string[];

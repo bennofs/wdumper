@@ -19,19 +19,19 @@ public class ValueFilter implements SnakVisitor<Boolean> {
     private final String property;
     private final ValueFilterType type;
     private final String value;
-    private final boolean truthy;
+    private final RankFilter rank;
 
     @JsonCreator
     ValueFilter(
             @JsonProperty(value = "property", required = true) String property,
             @JsonProperty(value = "type", required = true) ValueFilterType type,
             @JsonProperty(value = "value") String value,
-            @JsonProperty(value = "truthy", required = true) boolean truthy
+            @JsonProperty(value = "rank") RankFilter rank
     ) {
         this.property = property;
         this.type = type;
         this.value = value;
-        this.truthy = truthy;
+        this.rank = rank;
 
         if (this.type == ValueFilterType.ENTITYID) {
             Validate.notNull(this.value, "filter with type entityid requires value attribute");
@@ -94,12 +94,13 @@ public class ValueFilter implements SnakVisitor<Boolean> {
     boolean matches(StatementGroup sg) {
         if (sg == null) return false;
 
-        if (this.truthy) {
+        if (this.rank == RankFilter.BEST_RANK) {
             sg = sg.getBestStatements();
             if (sg == null) return false;
         }
 
         for (Statement s : sg) {
+            if (s.getRank() == StatementRank.DEPRECATED && this.rank != RankFilter.ALL) continue;
             if (s.getMainSnak().accept(this)) return true;
         }
 

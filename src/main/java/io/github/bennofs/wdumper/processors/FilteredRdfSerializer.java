@@ -143,13 +143,13 @@ public class FilteredRdfSerializer implements EntityDocumentDumpProcessor {
         }
 
         writeDocumentTerms(subject, document);
-        writeStatements(subject, document, this.spec.isTruthy());
+        writeStatements(subject, document);
 
         if (spec.isSitelinks())
             writeSiteLinks(subject, document.getSiteLinks());
 
         this.snakRdfConverter.writeAuxiliaryTriples();
-        this.owlDeclarationBuffer.writePropertyDeclarations(this.rdfWriter, !spec.isTruthy(), true);
+        this.owlDeclarationBuffer.writePropertyDeclarations(this.rdfWriter, spec.hasFullStatements(), true);
         this.referenceRdfConverter.writeReferences();
     }
 
@@ -172,7 +172,7 @@ public class FilteredRdfSerializer implements EntityDocumentDumpProcessor {
                 RdfWriter.WB_PROPERTY_TYPE,
                 this.rdfWriter.getUri(document.getDatatype().getIri()));
 
-        writeStatements(subject, document, this.spec.isTruthy());
+        writeStatements(subject, document);
         writeInterPropertyLinks(document);
 
         this.snakRdfConverter.writeAuxiliaryTriples();
@@ -237,7 +237,7 @@ public class FilteredRdfSerializer implements EntityDocumentDumpProcessor {
                         PropertyContext.NO_VALUE));
     }
 
-    void writeStatements(Resource subject, StatementDocument statementDocument, boolean truthy)
+    void writeStatements(Resource subject, StatementDocument statementDocument)
             throws RDFHandlerException {
         for (StatementGroup statementGroup : statementDocument
                 .getStatementGroups()) {
@@ -329,6 +329,16 @@ public class FilteredRdfSerializer implements EntityDocumentDumpProcessor {
             this.includedStatements.incrementAndGet();
         }
 
+        // simple statement
+        if (options.isSimple() && best) {
+            writeSimpleStatement(subject, statement);
+        }
+
+        // write full statement only if rank is as specified
+        if (!options.getRankFilter().matches(statement.getRank(), best)) {
+            return;
+        }
+
         if (options.isStatement()) {
             IRI property = this.rdfWriter.getUri(Vocabulary.getPropertyUri(
                     statement.getMainSnak().getPropertyId(), PropertyContext.STATEMENT));
@@ -339,10 +349,6 @@ public class FilteredRdfSerializer implements EntityDocumentDumpProcessor {
         if (this.spec.isMeta() && options.isStatement()) {
             this.rdfWriter.writeTripleValueObject(statementResource,
                     RdfWriter.RDF_TYPE, RdfWriter.WB_STATEMENT);
-        }
-
-        if (options.isSimple() && best) {
-            writeSimpleStatement(subject, statement);
         }
 
         if (options.isFull()) {

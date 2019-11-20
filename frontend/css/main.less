@@ -89,18 +89,9 @@ h2 {
     border: @border-base;
     border-radius: @border-radius-base;
     box-shadow: @box-shadow-card;
-    padding-bottom: 1rem;
     margin-bottom: 0.5rem;
     min-height: 3rem;
     position: relative;
-
-    table {
-        table-layout: fixed;
-    }
-
-    table:not(:first-child) {
-        margin-top: 0.8rem;
-    }
 
     .card-corner {
         border-radius: @border-radius-base;
@@ -123,8 +114,8 @@ h2 {
         border-style: dashed;
     }
 
-    table {
-        width: 100%;
+    .card-subsection {
+        margin-left: 1rem;
     }
 }
 
@@ -173,7 +164,7 @@ h2 {
         border-right: @border-base;
     }
 
-    input {
+    input[type="text"] {
         outline: 0;
         border: 0;
         margin: 0;
@@ -241,6 +232,7 @@ h2 {
 /* controls below a section */
 .controls-add {
     margin-top: 0.5rem;
+    margin-bottom: 0.3rem;
 }
 
 button.submit {
@@ -254,6 +246,9 @@ button.submit {
 .form-label, .form-text {
     display: inline-block;
     color: @color-base--subtle;
+}
+
+.form-label {
     margin-right: 2em;
 }
 
@@ -270,7 +265,7 @@ button.submit {
 }
 
 .form-line {
-    margin-bottom: 0.25em;
+    margin-bottom: 1em;
 
     & > .form-label {
         width: 10em;
@@ -278,11 +273,16 @@ button.submit {
 
     & > * {
         display: inline-block;
-        vertical-align: text-top;
+        vertical-align: baseline;
     }
 
     input {
-        margin-right: 0.5rem;
+        margin-left: 0.2rem;
+        margin-right: 0.4rem;
+    }
+
+    input[type="text"] {
+        width: 4em;
     }
 
     .tag-list-input {
@@ -293,16 +293,85 @@ button.submit {
 
 .radio-group {
     display: inline;
-    margin: 0;
+    margin: 0 0.3rem;
     .radio-group--option {
         display: inline;
-        margin-right: 1em;
+        margin-left: 0.3em;
+    }
+    input[type="radio"] {
+        display: none;
     }
     label {
-        margin-left: 0.25rem;
+        background-color: @background-color-framed;
+        padding: 2px 4px;
+        border-radius: @border-radius-base;
+        border: @border-base;
+    }
+    label:hover, :hover + label {
+        cursor: pointer;
+        background-color: @background-color-framed--hover;
+    }
+    :checked + label {
+        background-color: @background-color-framed--active;
+        color: @color-base--active;
     }
 }
 
+/* css toggle switch */
+input[type="checkbox"] {
+  @full-width: 3.2rem;
+  @full-height: 1.2rem;
+  @box-height: 1rem;
+  @box-width: 1.2rem;
+
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  margin: 0 0.6rem;
+  appearance: none;
+  outline: none;
+  width: @full-width;
+  height: @full-height;
+  display: inline-block;
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+  border: @border-base;
+  border-radius: @border-radius-base;
+  background-color: @background-color-framed;
+  transition: background-color ease 0.3s;
+
+  &:before {
+    content: "ON OFF";
+    display: inline;
+    position: absolute;
+    z-index: 2;
+    width: @box-width;
+    height: @box-height;
+    background: #fff;
+    left: 0.05em;
+    top: (@full-height - @box-height) / 3;
+    border: @border-base;
+    padding-bottom: (@full-height - @box-height) / 2;
+    line-height: 1em;
+    border-radius: @border-radius-base;
+    //border: @border-base;
+    font-weight: bold;
+    text-indent: -@box-width - (@full-width - @box-width)/4;
+    word-spacing: @box-width + 0.1em;
+    font-size: 0.9rem;
+    color: @color-base--active;
+    text-shadow: -1px -1px rgba(0,0,0,0.15);
+    white-space: nowrap;
+    transition: all cubic-bezier(0.3, 1.5, 0.7, 1) 0.3s;
+  }
+
+  &:checked {
+      background-color: @background-color-framed--active;
+      &:before {
+          left: @full-width - @box-width;
+      }
+  }
+}
 
 .autocomplete {
     background: white;
@@ -350,6 +419,10 @@ button.submit {
 }
 
 /* special styles */
+.invisible {
+    visibility: hidden;
+}
+
 .hide {
     display: none;
 }
@@ -364,6 +437,11 @@ button.submit {
 
 .error-message {
     color: red;
+}
+
+input[type="text"] {
+    border: @border-base;
+    border-radius: @border-radius-base;
 }
 
 /* temporary rules for experiments */

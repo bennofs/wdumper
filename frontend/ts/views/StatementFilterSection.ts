@@ -25,13 +25,14 @@ export class StatementFilterSection {
     }
 
     add(isDefault: boolean = false) {
-        let initial = m.createWithId({
+        let initial: m.StatementFilter = m.createWithId({
+            rank: "all",
             simple: true,
             full: false,
             references: false,
             qualifiers: false,
             properties: []
-        })
+        });
         if (isDefault) {
             delete initial.properties;
         }

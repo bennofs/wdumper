@@ -38,7 +38,7 @@ class DumpCreator {
     }
 
     submit() {
-        const data = {
+        const data: m.DumpSpec = {
             ...this.model,
             entities: Object.values(this.model.entities).map(entity => {
                 return {
@@ -64,6 +64,7 @@ class DumpCreator {
 
 function mountCreate() {
     const initSpec: m.DumpSpec = {
+        version: "1",
         entities: {},
         statements: {},
 

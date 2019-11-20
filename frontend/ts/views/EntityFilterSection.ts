@@ -19,13 +19,13 @@ export class EntityFilterSection {
     }
 
     add(type: m.EntityFilter["type"]) {
-        const prop = m.createWithId({
+        const prop: m.ValueFilter = m.createWithId({
             property: "",
             type: "anyvalue",
-            truthy: false
+            rank: "non-deprecated",
         });
 
-        const properties = {}
+        const properties: m.EntityFilter["properties"] = {}
         properties[prop.id] = prop;
 
         const initial: m.EntityFilter = m.createWithId({
