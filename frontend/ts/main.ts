@@ -71,7 +71,6 @@ function mountCreate() {
         labels: true,
         descriptions: true,
         aliases: true,
-        truthy: false,
         meta: true,
         sitelinks: true
     };

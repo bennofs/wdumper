@@ -43,7 +43,6 @@ export interface DumpSpec {
     labels: boolean;
     descriptions: boolean;
     aliases: boolean;
-    truthy: boolean;
     meta: boolean;
     sitelinks: boolean;
 }
