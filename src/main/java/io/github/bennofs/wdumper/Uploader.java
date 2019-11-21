@@ -8,9 +8,14 @@ import io.github.bennofs.wdumper.interfaces.DumpStatusHandler;
 import io.github.bennofs.wdumper.zenodo.Deposit;
 import io.github.bennofs.wdumper.zenodo.Zenodo;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
+import java.util.zip.GZIPInputStream;
 
 /**
  * This class handles the upload of finished dumps to zenodo.
@@ -30,6 +35,23 @@ public class Uploader implements Runnable {
         this.zenodoSandbox = zenodoSandbox;
         this.outputDirectory = outputDirectory;
         this.runCompletedEvent = runCompletedEvent;
+    }
+
+    static String generatePreview(Path dumpPath) throws IOException {
+        try (final InputStream in = new GZIPInputStream(Files.newInputStream(dumpPath))) {
+            final byte[] buffer = new byte[Constants.PREVIEW_SIZE];
+            int end = 0;
+            while (end != buffer.length) {
+                int r = in.read(buffer, end, buffer.length - end);
+                if (r <= 0) break;
+                end += r;
+            }
+            // search backward for last newline
+            while (end > 0 && buffer[end-1] != 0xa) {
+                end--;
+            }
+            return new String(buffer, 0, end, StandardCharsets.UTF_8);
+        }
     }
 
     private void processUpload() throws InterruptedException {
@@ -61,6 +83,10 @@ public class Uploader implements Runnable {
                     deposit.addFile("wdumper-spec.json", dumpSpec, (field, fileName, bytesWritten, totalBytes) -> {
                     });
                 }
+
+                // upload short preview in plain text, uncompressed
+                final String preview = generatePreview(outputPath);
+                deposit.addFile("preview.nt", preview, (field, fileName, bytesWritten, totalBytes) ->  {});
 
                 final DumpInfo info = db.withHandle(handle -> db.getDumpInfo(handle, task.dump_id));
                 deposit.addFile("info.json", mapper.writeValueAsString(info), (field, fileName, bytesWritten, totalBytes) -> {});

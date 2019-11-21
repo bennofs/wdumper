@@ -19,6 +19,8 @@ public class Constants {
     public static final int RECENT_MAX_MINUTES = intFromEnv("RECENT_MAX_MINUTES", 60);
     // interval for updating the progress of the current run
     public static final int PROGRESS_INTERVAL = intFromEnv("PROGRESS_INTERVAL", 60);
+    // maximum size of the preview in bytes that is generated for zenodo uploads
+    public static final int PREVIEW_SIZE = 0x100000;
 
     private static String readMetaFile(String name, String def) {
         try {
