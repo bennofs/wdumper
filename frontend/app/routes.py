@@ -171,6 +171,9 @@ def date2delta(delta):
 
 @app.template_filter("ghversion")
 def ghversion(version, user, project):
+    if version is None:
+        return "unknown"
+
     version = version.strip()
     if version.startswith("release-"):
         name = version
