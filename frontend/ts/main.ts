@@ -15,7 +15,7 @@ class DumpCreator {
     constructor(parent: HTMLElement, init: m.DumpSpec) {
         this.parent = parent;
         this.model = init;
-        this.metadata = { title: "" };
+        this.metadata = { title: "", description: "" };
 
         this.entityFilterSectionView = new v.EntityFilterSection(document.getElementById("entity-filters"));
         this.statementFilterSectionView = new v.StatementFilterSection(document.getElementById("statement-filters"));

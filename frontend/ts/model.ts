@@ -49,5 +49,6 @@ export interface DumpSpec {
 }
 
 export interface DumpMetadata {
-    title: string
+    title: string;
+    description: string;
 }

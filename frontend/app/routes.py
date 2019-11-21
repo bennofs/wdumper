@@ -46,6 +46,7 @@ def create():
 
     dump = Dump(
         title=metadata["title"],
+        description=metadata["description"],
         spec=json.dumps(spec)
     )
     db.session.add(dump)

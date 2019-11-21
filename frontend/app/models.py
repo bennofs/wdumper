@@ -44,6 +44,7 @@ class ZenodoTarget(enum.Enum):
 class Dump(db.Model):
     id = db.Column(db.Integer, primary_key=True, nullable=False)
     title = db.Column(db.UnicodeText, nullable=False)
+    description = db.Column(db.UnicodeText, nullable=False, server_default=db.text("''"))
     spec = db.Column(db.Text, nullable=False)
     created_at = db.Column(db.TIMESTAMP, index=True, nullable=False, server_default=func.now())
     run_id = db.Column(db.Integer, db.ForeignKey("run.id"), nullable=True)

@@ -6,5 +6,6 @@ env/
 static/main.css
 static/main.js
 static/main.js.map
+ts/**/*.js
 __pycache__
 *.pyc
