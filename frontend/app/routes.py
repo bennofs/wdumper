@@ -88,7 +88,20 @@ def zenodo():
             'upload_type': 'dataset',
             'access_right': 'open',
             'license': 'cc-zero',
-            'description': "RDF Dump of wikidata produced with wdumper",
+            'description': '''
+            <p>
+            RDF dump of wikidata produced with <a href="https://tools.wmflabs.org/wdumps/">wdumps</a>.
+            </p>
+
+            <p>
+            {dump.description}<br>
+            <a href="https://tools.wmflabs.org/wdumps/dump/{dump.id}">View on wdumper</a>
+            </p>
+
+            <p>
+            <b>entity count</b>: {dump.entity_count}, <b>statement count</b>: {dump.statement_count}, <b>triple count</b>: {dump.triple_count}
+            </p>
+            '''.strip().format(dump=dump),
             'creators': [{'name': "Benno Fünfstück"}],
             'prereserve_doi': True,
             'doi': doi,
