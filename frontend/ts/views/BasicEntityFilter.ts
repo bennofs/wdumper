@@ -34,9 +34,9 @@ class PropertyRestriction {
         }, (ty) => this.setType(ty));
 
         this.rankRadio = buildRadioGroup({
-            "best-rank": "BestRank",
-            "non-deprecated": "NonDeprecated",
-            "all": "Any"
+            "best-rank": "best rank",
+            "non-deprecated": "not deprecated",
+            "all": "any"
         }, (rank) => this.model.rank = rank);
 
         this.propertyEl = el("input", {"type": "text", placeholder: "P31"}) as HTMLInputElement;

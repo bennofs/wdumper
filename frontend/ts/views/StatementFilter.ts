@@ -24,9 +24,9 @@ export class StatementFilter {
 
     constructor(remove: (id: number) => void) {
         this.rankRadio = buildRadioGroup({
-            "best-rank": "BestRank",
-            "non-deprecated": "NonDeprecated",
-            "all": "Any"
+            "best-rank": "best rank",
+            "non-deprecated": "not deprecated",
+            "all": "any"
         }, (rank) => this.model.rank = rank);
 
         this.statementsRadio = buildRadioGroup({
