@@ -125,7 +125,7 @@ def status():
     next_run_min = None
     next_run_max = None
     valid_next_run = False
-    if not runs_in_progress:
+    if not runs_in_progress and queue_min_age is not None:
         next_run_min = queue_min_age + timedelta(minutes=config.RECENT_MIN_MINUTES)
         next_run_max = queue_max_age + timedelta(minutes=config.RECENT_MAX_MINUTES)
         valid_next_run = next_run_min >= datetime.utcnow() and next_run_max >= datetime.utcnow()

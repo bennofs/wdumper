@@ -3,7 +3,7 @@
 {% block content %}
 <h2>Server status</h2>
 
-{% if not runs_in_progress and not valid_next_run %}
+{% if not runs_in_progress and not valid_next_run and queue_length %}
 <p class="error-message">
     ERROR: The processing of the queue appears to have halted. Something is wrong with the backend.
 </p>
