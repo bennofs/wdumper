@@ -4,6 +4,12 @@
 {% block content %}
 <h2>Dump {{n}}: {{ dump.title or "unnamed"}}</h2>
 
+{% if dump.description %}
+<p>
+{{ dump.description }}
+</p>
+{% endif %}
+
 <div class="intro">
 {% if dump.done %}
     <p>
