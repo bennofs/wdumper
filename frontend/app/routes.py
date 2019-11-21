@@ -158,12 +158,12 @@ def status():
     return render_template("status.html", **locals())
 
 @app.template_filter("timedelta")
-def date2delta(delta):
+def date2delta(delta, invert=False):
     if not delta:
         delta = timedelta()
 
     if isinstance(delta, datetime):
-        delta = datetime.utcnow() - delta
+        delta = datetime.utcnow() - delta if not invert else delta - datetime.utcnow()
     
     if delta.days:
         return "{}d{}h".format(delta.days, delta.seconds // (60**2))

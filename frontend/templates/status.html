@@ -32,8 +32,8 @@ There is also a maximum wait time: no dump request has to wait longer than 60 mi
     <tr><th>Oldest unfinished dump creation</th><td>{{unfinished_max_age|timedelta}} ago</td></tr>
     <tr><th>Newest unfinished dump creation</th><td>{{unfinished_min_age|timedelta}} ago</td></tr>
     {% if valid_next_run %}
-    <tr><th>Minimum wait time until processing starts</th><td>{{next_run_min|timedelta}}</td></tr>
-    <tr><th>Maximum wait time until processing starts</th><td>{{next_run_max|timedelta}}</td></tr>
+    <tr><th>Minimum wait time until processing starts</th><td>{{next_run_min|timedelta(invert=True)}}</td></tr>
+    <tr><th>Maximum wait time until processing starts</th><td>{{next_run_max|timedelta(invert=True)}}</td></tr>
     {% endif %}
 </table>
 

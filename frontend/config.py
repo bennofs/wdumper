@@ -13,5 +13,5 @@ ZENODO_SANDBOX_TOKEN = os.getenv("ZENODO_SANDBOX_TOKEN", "")
 ZENODO_TOKEN = os.getenv("ZENODO_TOKEN", "")
 
 # these two must match the setting for the dump runner
-RECENT_MIN_MINUTES = os.getenv("RECENT_MIN_MINUTES", 20)
-RECENT_MAX_MINUTES = os.getenv("RECENT_MAX_MINUTES", 60)
+RECENT_MIN_MINUTES = int(os.getenv("RECENT_MIN_MINUTES", "20"))
+RECENT_MAX_MINUTES = int(os.getenv("RECENT_MAX_MINUTES", "60"))
