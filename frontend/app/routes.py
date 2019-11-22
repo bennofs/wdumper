@@ -157,6 +157,10 @@ def status():
 
     return render_template("status.html", **locals())
 
+@app.route("/about", methods=["GET"])
+def about():
+    return render_template("about.html")
+
 @app.template_filter("timedelta")
 def date2delta(delta, invert=False):
     if not delta:
