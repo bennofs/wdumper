@@ -1,7 +1,7 @@
 import json
 import requests
 from flask import render_template, render_template_string, request, jsonify, make_response, send_from_directory, url_for
-from mark0upsafe import Markup
+from markupsafe import Markup
 from urllib.parse import quote
 from app import app, db
 from app.models import Dump, ZenodoTarget, Zenodo, Run
