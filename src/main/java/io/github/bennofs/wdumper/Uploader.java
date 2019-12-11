@@ -77,19 +77,26 @@ public class Uploader implements Runnable {
                 final Path outputPath = DumpRunner.getOutputPath(outputDirectory, task.dump_id);
 
                 final Deposit deposit = api.getDeposit(task.deposit_id);
+                final Deposit.DepositFile[] files = deposit.getFiles();
 
-                if (Arrays.stream(deposit.getFiles()).noneMatch(file -> file.filename.equals("wdumper-spec.json"))) {
+                if (Arrays.stream(files).noneMatch(file -> file.filename.equals("wdumper-spec.json"))) {
                     final String dumpSpec = db.withHandle(handle -> db.getDumpSpec(handle, task.dump_id));
                     deposit.addFile("wdumper-spec.json", dumpSpec, (field, fileName, bytesWritten, totalBytes) -> {
                     });
                 }
 
                 // upload short preview in plain text, uncompressed
-                final String preview = generatePreview(outputPath);
-                deposit.addFile("preview.nt", preview, (field, fileName, bytesWritten, totalBytes) ->  {});
+                if (Arrays.stream(files).noneMatch(file -> file.filename.equals("preview.nt"))) {
+                    final String preview = generatePreview(outputPath);
+                    deposit.addFile("preview.nt", preview, (field, fileName, bytesWritten, totalBytes) -> {
+                    });
+                }
 
-                final DumpInfo info = db.withHandle(handle -> db.getDumpInfo(handle, task.dump_id));
-                deposit.addFile("info.json", mapper.writeValueAsString(info), (field, fileName, bytesWritten, totalBytes) -> {});
+                if (Arrays.stream(files).noneMatch(file -> file.filename.equals("info.json"))) {
+                    final DumpInfo info = db.withHandle(handle -> db.getDumpInfo(handle, task.dump_id));
+                    deposit.addFile("info.json", mapper.writeValueAsString(info), (field, fileName, bytesWritten, totalBytes) -> {
+                    });
+                }
 
                 try (final UploadProgressMonitor progress = new UploadProgressMonitor(db, task.id)) {
                     deposit.addFile(outputPath.getFileName().toString(), outputPath.toFile(), progress);
