@@ -48,7 +48,7 @@ class PropertyRestriction {
         this.valueEl = el("input", {"type":"text", placeholder: "Q5"}) as HTMLInputElement;
         this.valueEl.addEventListener("change", () => {
             this.model.value = this.valueEl.value;
-        })
+        });
         completeWikidata("item", this.valueEl);
 
         this.el = el("div.form-line", [
@@ -94,10 +94,10 @@ class PropertyRestriction {
 
 export class BasicEntityFilter {
     readonly el: HTMLElement;
-    readonly typeRadio: RadioGroup<m.EntityFilter["type"]>;
+    readonly typeRadio: RadioGroup<m.BasicEntityFilter["type"]>;
     readonly propertiesEl: List;
 
-    model: m.EntityFilter;
+    model: m.BasicEntityFilter;
     id: number;
 
     constructor(remove: (id: number) => void) {
@@ -145,7 +145,7 @@ export class BasicEntityFilter {
         ])
     }
 
-    update(model: m.EntityFilter) {
+    update(model: m.BasicEntityFilter) {
         this.model = model;
         this.id = model.id;
 

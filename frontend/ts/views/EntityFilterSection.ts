@@ -8,27 +8,27 @@ export class EntityFilterSection {
     readonly emptyEl: HTMLElement;
     readonly container: HTMLElement;
 
-    model: { [id: number]: m.EntityFilter }
+    model: { [id: number]: m.BasicEntityFilter };
 
     constructor(container: HTMLElement) {
-        this.container = container
+        this.container = container;
         this.emptyEl = document.getElementById("entity-match-all");
-        this.el = list(this.container, BasicEntityFilter.bind(undefined, (id: number) => this.remove(id)), "id")
+        this.el = list(this.container, BasicEntityFilter.bind(undefined, (id: number) => this.remove(id)), "id");
 
         document.getElementById("add-basic-filter").addEventListener("click", () => this.add("item"));
     }
 
-    add(type: m.EntityFilter["type"]) {
+    add(type: m.BasicEntityFilter["type"]) {
         const prop: m.ValueFilter = m.createWithId({
             property: "",
             type: "anyvalue",
             rank: "non-deprecated",
         });
 
-        const properties: m.EntityFilter["properties"] = {}
+        const properties: m.BasicEntityFilter["properties"] = {};
         properties[prop.id] = prop;
 
-        const initial: m.EntityFilter = m.createWithId({
+        const initial: m.BasicEntityFilter = m.createWithId({
             type,
             properties
         });
@@ -42,7 +42,7 @@ export class EntityFilterSection {
         this.update(this.model);
     }
 
-    update(model: {[id:number]: m.EntityFilter}) {
+    update(model: {[id:number]: m.BasicEntityFilter}) {
         this.model = model;
 
         const matchers = Object.values(this.model);

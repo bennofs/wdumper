@@ -5,7 +5,7 @@ export const { createWithId } = new class {
         this.sequence += 1;
         return {id, ...t};
     };
-}
+};
 
 export interface ValueFilter {
     id: number;
@@ -13,12 +13,11 @@ export interface ValueFilter {
     rank: RankFilter;
     type: "novalue" | "somevalue" | "entityid" | "anyvalue" | "any";
     value?: string;
-
 }
 
 export type RankFilter = "best-rank" | "non-deprecated" | "all";
 
-export interface EntityFilter {
+export interface BasicEntityFilter {
     id: number;
     type: "item" | "property" | "lexeme";
     properties: { [id:number]: ValueFilter };
@@ -36,7 +35,7 @@ export interface StatementFilter {
 
 export interface DumpSpec {
     version: String;
-    entities: { [id:number]: EntityFilter };
+    entities: { [id:number]: BasicEntityFilter };
     statements: { [id:number]: StatementFilter };
     languages?: string[];
 
