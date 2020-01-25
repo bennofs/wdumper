@@ -1,0 +1,4 @@
+# the directory is the default output for generated dumps
+# we don't want the dumps to end up in the repo
+.
+!.gitignore
