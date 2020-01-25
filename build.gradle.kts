@@ -76,6 +76,13 @@ application {
     mainClassName = "io.github.bennofs.wdumper.App"
 }
 
+task<JavaExec>("run-backend") {
+    classpath = sourceSets["main"].runtimeClasspath
+    main = application.mainClassName
+    workingDir = project.rootDir
+    args = listOf(project.rootDir.resolve("data/slice.json.zst").toString());
+}
+
 val generateToolVersion by tasks.registering(Exec::class) {
     doFirst {
         val outputDir = project.buildDir.resolve("generated/resources/meta")
