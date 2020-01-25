@@ -9,6 +9,7 @@ class DumpCreator {
     readonly additionalSettingsView: v.AdditionalSettings;
     readonly metadataSectionView: v.MetadataSection;
     readonly parent: HTMLElement;
+    readonly elSamplingDesc: HTMLElement;
     readonly model: m.DumpSpec;
     readonly metadata: m.DumpMetadata;
 
@@ -20,10 +21,19 @@ class DumpCreator {
         this.entityFilterSectionView = new v.EntityFilterSection(document.getElementById("entity-filters"));
         this.statementFilterSectionView = new v.StatementFilterSection(document.getElementById("statement-filters"));
         this.additionalSettingsView = new v.AdditionalSettings();
-        this.metadataSectionView = new v.MetadataSection()
+        this.metadataSectionView = new v.MetadataSection();
 
         mount(document.getElementById("additional-settings"), this.additionalSettingsView);
         mount(document.getElementById("dump-metadata"), this.metadataSectionView);
+
+        const elSampling = document.getElementById("sampling-prop") as HTMLInputElement;
+        this.elSamplingDesc = document.getElementById("sampling-desc");
+        elSampling.addEventListener("input", () => {
+            this.model.samplingPercent = Number.parseInt(elSampling.value);
+            this.updateSamplingDesc();
+        });
+        this.updateSamplingDesc();
+        elSampling.value = this.model.samplingPercent.toString();
 
         document.getElementById("submit").addEventListener("click", () => {
             this.submit();
@@ -35,6 +45,11 @@ class DumpCreator {
         this.metadataSectionView.update(this.metadata);
 
         this.statementFilterSectionView.add(true);
+    }
+
+    updateSamplingDesc() {
+        const amount = (this.model.samplingPercent == 100) ? "all" : (this.model.samplingPercent + "% of");
+        this.elSamplingDesc.textContent = `keep ${amount} matched entites`;
     }
 
     submit() {
@@ -67,6 +82,7 @@ function mountCreate() {
         version: "1",
         entities: {},
         statements: {},
+        samplingPercent: 100,
 
         labels: true,
         descriptions: true,

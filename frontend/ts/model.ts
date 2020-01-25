@@ -37,6 +37,7 @@ export interface DumpSpec {
     version: String;
     entities: { [id:number]: BasicEntityFilter };
     statements: { [id:number]: StatementFilter };
+    samplingPercent?: number;
     languages?: string[];
 
     labels: boolean;

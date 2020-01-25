@@ -1,18 +1,18 @@
 package io.github.bennofs.wdumper.spec;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.*;
 import com.google.common.base.MoreObjects;
 import org.eclipse.rdf4j.rio.RDFFormat;
 import org.wikidata.wdtk.datamodel.interfaces.StatementDocument;
 
 import java.util.HashMap;
 import java.util.Objects;
+import java.util.Random;
 import java.util.Set;
+import java.util.concurrent.ThreadLocalRandom;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class DumpSpec {
     @JsonProperty
     final private EntityFilter[] entities;
@@ -29,15 +29,22 @@ public class DumpSpec {
     final private boolean descriptions;
     final private boolean aliases;
     final private boolean sitelinks;
+    final private int samplingPercent;
+    final private long seed;
 
     @JsonIgnore
     final private RDFFormat format = RDFFormat.NTRIPLES;
+
+    @JsonIgnore
+    final private Random random;
 
     @JsonCreator
     public DumpSpec(
             @JsonProperty("version") String version,
             @JsonProperty("entities") EntityFilter[] entities,
             @JsonProperty("statements") Set<StatementFilter> statements,
+            @JsonProperty(value = "samplingPercent") Integer samplingPercent,
+            @JsonProperty(value = "seed") Long seed,
             @JsonProperty("languages") Set<String> languages,
             @JsonProperty(value = "labels") boolean labels,
             @JsonProperty(value = "descriptions") boolean descriptions,
@@ -51,12 +58,19 @@ public class DumpSpec {
         this.version = version;
         this.entities = entities;
         this.statements = statements;
+        this.samplingPercent = samplingPercent == null ? 100 : samplingPercent;
         this.languages = languages;
         this.labels = labels;
         this.descriptions = descriptions;
         this.aliases = aliases;
         this.meta = meta;
         this.sitelinks = sitelinks;
+
+        if (seed == null) {
+            seed = ThreadLocalRandom.current().nextLong();
+        }
+        this.seed = seed;
+        this.random = new Random(seed);
 
         this.statementOptions = new HashMap<>();
         this.statementOptionsDefault = statements.stream()
@@ -103,13 +117,17 @@ public class DumpSpec {
     }
 
     public boolean includeDocument(StatementDocument doc) {
-        if (entities.length == 0) return true;
-
+        boolean include = entities.length == 0;
         for (EntityFilter filterSpec : entities) {
-            if (filterSpec.matches(doc)) return true;
+            if (filterSpec.matches(doc)) {
+                include = true;
+            }
         }
 
-        return false;
+        include = include &&
+                (this.samplingPercent == 100 || this.random.nextInt(100) < this.samplingPercent);
+
+        return include;
     }
 
     public StatementOptions findStatementOptions(final String property) {
@@ -133,6 +151,8 @@ public class DumpSpec {
                 .add("entities", entities)
                 .add("statementOptions", statementOptions)
                 .add("languages", languages)
+                .add("samplingPercent", samplingPercent)
+                .add("seed", seed)
                 .add("labels", labels)
                 .add("descriptions", descriptions)
                 .add("aliases", aliases)
