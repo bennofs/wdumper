@@ -1,0 +1,21 @@
+jooq {
+    version = "3.12.3"
+    liquibase(sourceSets.main) {
+        generator {
+            database {
+                name = "io.github.bennofs.jooq.LiquibaseDatabase"
+                properties {
+                    property {
+                        key = "scripts"
+                        value = project.ext.changeLogFile
+                    }
+                }
+            }
+            target {
+                packageName = "io.github.bennofs.wdumper.jooq"
+            }
+        }
+
+        logging = "WARN"
+    }
+}

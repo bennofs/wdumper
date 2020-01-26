@@ -1,0 +1,140 @@
+<?xml version="1.1" encoding="UTF-8" standalone="no"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog" xmlns:ext="http://www.liquibase.org/xml/ns/dbchangelog-ext" xmlns:pro="http://www.liquibase.org/xml/ns/pro" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog-ext http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-ext.xsd http://www.liquibase.org/xml/ns/pro http://www.liquibase.org/xml/ns/pro/liquibase-pro-3.8.xsd http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <changeSet author="bennofs (generated)" id="1580052151820-2">
+        <createTable tableName="dump">
+            <column autoIncrement="true" name="id" type="INT">
+                <constraints nullable="false" primaryKey="true"/>
+            </column>
+            <column name="title" type="TEXT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="spec" type="TEXT">
+                <constraints nullable="false"/>
+            </column>
+            <column defaultValueComputed="current_timestamp()" name="created_at" type="timestamp">
+                <constraints nullable="false"/>
+            </column>
+            <column defaultValueComputed="NULL" name="run_id" type="INT"/>
+            <column defaultValueNumeric="0" name="compressed_size" type="INT">
+                <constraints nullable="false"/>
+            </column>
+            <column defaultValueNumeric="0" name="entity_count" type="INT">
+                <constraints nullable="false"/>
+            </column>
+            <column defaultValueNumeric="0" name="statement_count" type="INT">
+                <constraints nullable="false"/>
+            </column>
+            <column defaultValueNumeric="0" name="triple_count" type="INT">
+                <constraints nullable="false"/>
+            </column>
+            <column defaultValue="" name="description" type="TEXT">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <createIndex indexName="fk_dump_run_id_run" tableName="dump">
+            <column defaultValueComputed="NULL" name="run_id"/>
+        </createIndex>
+
+        <createIndex indexName="ix_dump_created_at" tableName="dump">
+            <column defaultValueComputed="current_timestamp()" name="created_at"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet author="bennofs (generated)" id="1580052151820-3">
+        <createTable tableName="dump_error">
+            <column autoIncrement="true" name="id" type="INT">
+                <constraints nullable="false" primaryKey="true"/>
+            </column>
+            <column defaultValueComputed="current_timestamp()" name="logged_at" type="timestamp">
+                <constraints nullable="false"/>
+            </column>
+            <column defaultValueComputed="NULL" name="dump_id" type="INT"/>
+            <column defaultValueComputed="NULL" name="run_id" type="INT"/>
+            <column name="level" type="ENUM('CRITICAL', 'ERROR', 'WARNING')">
+                <constraints nullable="false"/>
+            </column>
+            <column name="message" type="TEXT">
+                <constraints nullable="false"/>
+            </column>
+            <column defaultValueComputed="NULL" name="zenodo_id" type="INT"/>
+        </createTable>
+
+        <createIndex indexName="fk_dump_error_dump_id_dump" tableName="dump_error">
+            <column defaultValueComputed="NULL" name="dump_id"/>
+        </createIndex>
+
+        <createIndex indexName="fk_dump_error_run_id_run" tableName="dump_error">
+            <column defaultValueComputed="NULL" name="run_id"/>
+        </createIndex>
+
+        <createIndex indexName="fk_dump_error_zenodo_id_zenodo" tableName="dump_error">
+            <column defaultValueComputed="NULL" name="zenodo_id"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet author="bennofs (generated)" id="1580052151820-4">
+        <createTable tableName="run">
+            <column autoIncrement="true" name="id" type="INT">
+                <constraints nullable="false" primaryKey="true"/>
+            </column>
+            <column defaultValueComputed="NULL" name="started_at" type="timestamp"/>
+            <column defaultValueComputed="NULL" name="finished_at" type="timestamp"/>
+            <column defaultValueNumeric="0" name="count" type="INT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="tool_version" type="TEXT"/>
+            <column name="wdtk_version" type="TEXT"/>
+            <column name="dump_date" type="TEXT"/>
+        </createTable>
+    </changeSet>
+
+    <changeSet author="bennofs (generated)" id="1580052151820-5">
+        <createTable tableName="zenodo">
+            <column autoIncrement="true" name="id" type="INT">
+                <constraints nullable="false" primaryKey="true"/>
+            </column>
+            <column name="deposit_id" type="INT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="dump_id" type="INT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="doi" type="TEXT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="target" type="ENUM('SANDBOX', 'RELEASE')">
+                <constraints nullable="false"/>
+            </column>
+            <column defaultValueComputed="current_timestamp()" name="created_at" type="timestamp">
+                <constraints nullable="false"/>
+            </column>
+            <column defaultValueComputed="NULL" name="started_at" type="timestamp"/>
+            <column defaultValueComputed="NULL" name="completed_at" type="timestamp"/>
+            <column defaultValueNumeric="0" name="uploaded_bytes" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <createIndex indexName="fk_zenodo_dump_id_dump" tableName="zenodo">
+            <column name="dump_id"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet author="bennofs (generated)" id="1580052151820-12">
+        <addForeignKeyConstraint baseColumnNames="dump_id" baseTableName="dump_error" constraintName="fk_dump_error_dump_id_dump" deferrable="false" initiallyDeferred="false" onDelete="RESTRICT" onUpdate="RESTRICT" referencedColumnNames="id" referencedTableName="dump" validate="true"/>
+    </changeSet>
+    <changeSet author="bennofs (generated)" id="1580052151820-13">
+        <addForeignKeyConstraint baseColumnNames="run_id" baseTableName="dump_error" constraintName="fk_dump_error_run_id_run" deferrable="false" initiallyDeferred="false" onDelete="RESTRICT" onUpdate="RESTRICT" referencedColumnNames="id" referencedTableName="run" validate="true"/>
+    </changeSet>
+    <changeSet author="bennofs (generated)" id="1580052151820-14">
+        <addForeignKeyConstraint baseColumnNames="zenodo_id" baseTableName="dump_error" constraintName="fk_dump_error_zenodo_id_zenodo" deferrable="false" initiallyDeferred="false" onDelete="RESTRICT" onUpdate="RESTRICT" referencedColumnNames="id" referencedTableName="zenodo" validate="true"/>
+    </changeSet>
+    <changeSet author="bennofs (generated)" id="1580052151820-15">
+        <addForeignKeyConstraint baseColumnNames="run_id" baseTableName="dump" constraintName="fk_dump_run_id_run" deferrable="false" initiallyDeferred="false" onDelete="RESTRICT" onUpdate="RESTRICT" referencedColumnNames="id" referencedTableName="run" validate="true"/>
+    </changeSet>
+    <changeSet author="bennofs (generated)" id="1580052151820-16">
+        <addForeignKeyConstraint baseColumnNames="dump_id" baseTableName="zenodo" constraintName="fk_zenodo_dump_id_dump" deferrable="false" initiallyDeferred="false" onDelete="RESTRICT" onUpdate="RESTRICT" referencedColumnNames="id" referencedTableName="dump" validate="true"/>
+    </changeSet>
+</databaseChangeLog>
