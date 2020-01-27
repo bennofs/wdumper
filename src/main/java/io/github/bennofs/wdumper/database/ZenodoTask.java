@@ -8,6 +8,13 @@ public class ZenodoTask {
     public int dump_id;
     public String target;
 
+    public ZenodoTask(int id, int deposit_id, int dump_id, String target) {
+        this.id = id;
+        this.deposit_id = deposit_id;
+        this.dump_id = dump_id;
+        this.target = target;
+    }
+
     @Override
     public String toString() {
         return MoreObjects.toStringHelper(this)

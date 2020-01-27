@@ -59,7 +59,7 @@ public class Uploader implements Runnable {
 
         // check if there a tasks to upload
         synchronized (this.runCompletedEvent) {
-            tasks = this.db.withHandle(handle -> db.getZenodoTasks(handle, 1));
+            tasks = db.getZenodoTasks(1);
 
             // if there are no tasks, wait for either a run to complete or the check interval timeout to expire
             if (tasks.isEmpty()) {
@@ -80,7 +80,7 @@ public class Uploader implements Runnable {
                 final Deposit.DepositFile[] files = deposit.getFiles();
 
                 if (Arrays.stream(files).noneMatch(file -> file.filename.equals("wdumper-spec.json"))) {
-                    final String dumpSpec = db.withHandle(handle -> db.getDumpSpec(handle, task.dump_id));
+                    final String dumpSpec = db.getDumpSpec(task.dump_id);
                     deposit.addFile("wdumper-spec.json", dumpSpec, (field, fileName, bytesWritten, totalBytes) -> {
                     });
                 }
@@ -93,7 +93,7 @@ public class Uploader implements Runnable {
                 }
 
                 if (Arrays.stream(files).noneMatch(file -> file.filename.equals("info.json"))) {
-                    final DumpInfo info = db.withHandle(handle -> db.getDumpInfo(handle, task.dump_id));
+                    final DumpInfo info = db.getDumpInfo(task.dump_id);
                     deposit.addFile("info.json", mapper.writeValueAsString(info), (field, fileName, bytesWritten, totalBytes) -> {
                     });
                 }
@@ -104,13 +104,11 @@ public class Uploader implements Runnable {
                 deposit.publish();
 
                 System.err.println("finished upload: " + task.toString());
-                db.useHandle(handle -> db.setUploadFinished(handle, task.id));
+                db.setUploadFinished(task.id);
             } catch(Exception e) {
                 System.err.println("upload failed");
                 e.printStackTrace();
-                db.useHandle(handle -> {
-                    db.logUploadMessage(handle, task.dump_id, task.id, DumpStatusHandler.ErrorLevel.CRITICAL, e.toString());
-                });
+                db.logUploadMessage(task.dump_id, task.id, DumpStatusHandler.ErrorLevel.CRITICAL, e.toString());
             }
         }
     }

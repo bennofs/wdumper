@@ -22,7 +22,7 @@ class UploadProgressMonitor implements ProgressMonitor, Closeable {
             @Override
             public void run() {
                 try {
-                    db.useHandle(handle -> db.setUploadProgress(handle, id, progress));
+                    db.setUploadProgress(id, progress);
                 } catch(Exception e) {
                     System.out.println("error while updating upload progress, ignored");
                     e.printStackTrace();
@@ -37,7 +37,7 @@ class UploadProgressMonitor implements ProgressMonitor, Closeable {
     }
 
     public void close() {
-        db.useHandle(handle -> db.setUploadProgress(handle, id, progress));
+        db.setUploadProgress(id, progress);
         this.timer.cancel();
     }
 }
