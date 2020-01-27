@@ -19,3 +19,5 @@ jooq {
         logging = "WARN"
     }
 }
+
+tasks.generateLiquibaseJooqSchemaSource.inputs.file(project.ext.changeLogFile)

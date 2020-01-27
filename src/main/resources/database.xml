@@ -125,16 +125,26 @@
     <changeSet author="bennofs (generated)" id="1580052151820-12">
         <addForeignKeyConstraint baseColumnNames="dump_id" baseTableName="dump_error" constraintName="fk_dump_error_dump_id_dump" deferrable="false" initiallyDeferred="false" onDelete="RESTRICT" onUpdate="RESTRICT" referencedColumnNames="id" referencedTableName="dump" validate="true"/>
     </changeSet>
+
     <changeSet author="bennofs (generated)" id="1580052151820-13">
         <addForeignKeyConstraint baseColumnNames="run_id" baseTableName="dump_error" constraintName="fk_dump_error_run_id_run" deferrable="false" initiallyDeferred="false" onDelete="RESTRICT" onUpdate="RESTRICT" referencedColumnNames="id" referencedTableName="run" validate="true"/>
     </changeSet>
+
     <changeSet author="bennofs (generated)" id="1580052151820-14">
         <addForeignKeyConstraint baseColumnNames="zenodo_id" baseTableName="dump_error" constraintName="fk_dump_error_zenodo_id_zenodo" deferrable="false" initiallyDeferred="false" onDelete="RESTRICT" onUpdate="RESTRICT" referencedColumnNames="id" referencedTableName="zenodo" validate="true"/>
     </changeSet>
+
     <changeSet author="bennofs (generated)" id="1580052151820-15">
         <addForeignKeyConstraint baseColumnNames="run_id" baseTableName="dump" constraintName="fk_dump_run_id_run" deferrable="false" initiallyDeferred="false" onDelete="RESTRICT" onUpdate="RESTRICT" referencedColumnNames="id" referencedTableName="run" validate="true"/>
     </changeSet>
+
     <changeSet author="bennofs (generated)" id="1580052151820-16">
         <addForeignKeyConstraint baseColumnNames="dump_id" baseTableName="zenodo" constraintName="fk_zenodo_dump_id_dump" deferrable="false" initiallyDeferred="false" onDelete="RESTRICT" onUpdate="RESTRICT" referencedColumnNames="id" referencedTableName="dump" validate="true"/>
+    </changeSet>
+
+    <changeSet id="change-stats-type" author="bennofs">
+        <modifyDataType tableName="dump" columnName="entity_count" newDataType="BIGINT"/>
+        <modifyDataType tableName="dump" columnName="statement_count" newDataType="BIGINT"/>
+        <modifyDataType tableName="dump" columnName="triple_count" newDataType="BIGINT"/>
     </changeSet>
 </databaseChangeLog>

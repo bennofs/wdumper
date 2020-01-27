@@ -123,11 +123,10 @@ public class Database {
     }
 
     public void setDumpStatistics(int dumpId, long entityCount, long statementCount, long tripleCount) {
-        // TODO: migrate to long
         context().update(DUMP)
-                .set(DUMP.ENTITY_COUNT, (int)entityCount)
-                .set(DUMP.STATEMENT_COUNT, (int)statementCount)
-                .set(DUMP.TRIPLE_COUNT, (int)tripleCount)
+                .set(DUMP.ENTITY_COUNT, entityCount)
+                .set(DUMP.STATEMENT_COUNT, statementCount)
+                .set(DUMP.TRIPLE_COUNT, tripleCount)
                 .where(DUMP.ID.eq(dumpId))
                 .execute();
     }
