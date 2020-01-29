@@ -39,7 +39,7 @@ public class Uploader implements Runnable {
 
     static String generatePreview(Path dumpPath) throws IOException {
         try (final InputStream in = new GZIPInputStream(Files.newInputStream(dumpPath))) {
-            final byte[] buffer = new byte[Constants.PREVIEW_SIZE];
+            final byte[] buffer = new byte[Config.PREVIEW_SIZE];
             int end = 0;
             while (end != buffer.length) {
                 int r = in.read(buffer, end, buffer.length - end);
@@ -63,7 +63,7 @@ public class Uploader implements Runnable {
 
             // if there are no tasks, wait for either a run to complete or the check interval timeout to expire
             if (tasks.isEmpty()) {
-                this.runCompletedEvent.wait(Constants.UPLOAD_INTERVAL_MILLIS);
+                this.runCompletedEvent.wait(Config.UPLOAD_INTERVAL_MILLIS);
                 return;
             }
         }

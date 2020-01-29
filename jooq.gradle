@@ -11,6 +11,10 @@ jooq {
                     }
                 }
             }
+            generate {
+                daos = true
+                pojos = true
+            }
             target {
                 packageName = "io.github.bennofs.wdumper.jooq"
             }

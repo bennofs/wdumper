@@ -11,7 +11,6 @@ import io.github.bennofs.wdumper.interfaces.RunnerStatusHandler;
 import io.github.bennofs.wdumper.processors.FilteredRdfSerializer;
 import io.github.bennofs.wdumper.spec.DumpSpec;
 import io.github.bennofs.wdumper.zenodo.Zenodo;
-import org.apache.commons.lang3.ObjectUtils;
 import org.wikidata.wdtk.dumpfiles.MwDumpFile;
 import picocli.CommandLine;
 
@@ -25,7 +24,7 @@ import java.util.Optional;
 /**
  * The main class for the backend application.
  */
-public class App implements Runnable, Closeable {
+public class Backend implements Runnable, Closeable {
 
     @CommandLine.Parameters(paramLabel = "DUMP", arity = "1", index = "0", description = "JSON dump from wikidata to process")
     private Path dumpFilePath;
@@ -41,7 +40,7 @@ public class App implements Runnable, Closeable {
     private final Zenodo zenodoSandbox;
     final Object runCompletedEvent;
 
-    private App(Database db, Zenodo zenodo, Zenodo zenodoSandbox) {
+    private Backend(Database db, Zenodo zenodo, Zenodo zenodoSandbox) {
         this.db = db;
         this.zenodo = zenodo;
         this.zenodoSandbox = zenodoSandbox;
@@ -89,7 +88,7 @@ public class App implements Runnable, Closeable {
 
         // no new tasks
         if (!maybeRunTask.isPresent()) {
-            Thread.sleep(Constants.DUMP_INTERVAL_MILLIS);
+            Thread.sleep(Config.DUMP_INTERVAL_MILLIS);
             return;
         }
         final RunTask runTask = maybeRunTask.get();
@@ -140,7 +139,7 @@ public class App implements Runnable, Closeable {
         }
     }
 
-    private static App create(final String dbUri, final String zenodoToken, final String zenodoSandboxToken) throws SQLException {
+    private static Backend create(final String dbUri, final String zenodoToken, final String zenodoSandboxToken) throws SQLException {
         final MysqlDataSource dataSource = new MysqlDataSource();
         dataSource.setURL(dbUri);
         dataSource.setServerTimezone("UTC");
@@ -148,23 +147,18 @@ public class App implements Runnable, Closeable {
         final Zenodo zenodo = new Zenodo("https://zenodo.org/api/", zenodoToken);
         final Zenodo zenodoSandbox = new Zenodo("https://sandbox.zenodo.org/api/", zenodoSandboxToken);
 
-        return new App(new Database(dataSource), zenodo, zenodoSandbox);
+        return new Backend(new Database(dataSource), zenodo, zenodoSandbox);
     }
 
 
     public static void main(String[] args) {
-        System.err.println("Backend version " + Constants.TOOL_VERSION + " with WDTK version " + Constants.WDTK_VERSION);
+        System.err.println("Backend version " + Config.TOOL_VERSION + " with WDTK version " + Config.WDTK_VERSION);
 
-        final String dbHost = ObjectUtils.defaultIfNull(System.getenv("DB_HOST"), "localhost");
-        final String dbName = ObjectUtils.defaultIfNull(System.getenv("DB_NAME"), "wdumper");
-        final String dbUser = ObjectUtils.defaultIfNull(System.getenv("DB_USER"), "root");
-        final String dbPassword = ObjectUtils.defaultIfNull(System.getenv("DB_PASSWORD"), "");
-
-        final String dbUri = "jdbc:mysql://" + dbHost + "/" + dbName + "?sslMode=DISABLED&user=" + dbUser + "&password=" + dbPassword;
+        final String dbUri = Config.constructDBUri();
         final String zenodoToken = System.getenv("ZENODO_TOKEN");
         final String zenodoSandboxToken = System.getenv("ZENODO_SANDBOX_TOKEN");
 
-        try (App app = App.create(dbUri, zenodoToken, zenodoSandboxToken)) {
+        try (Backend app = Backend.create(dbUri, zenodoToken, zenodoSandboxToken)) {
             new CommandLine(app).execute(args);
         } catch(SQLException e) {
             System.err.println("initialization failed: " + e.toString());

@@ -1,10 +1,12 @@
 package io.github.bennofs.wdumper;
 
+import org.apache.commons.lang3.ObjectUtils;
+
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 
-public class Constants {
+public class Config {
     private static int intFromEnv(String env, int def) {
         return Integer.parseInt(Objects.requireNonNullElse(System.getenv(env), "" + def));
     }
@@ -24,11 +26,20 @@ public class Constants {
 
     private static String readMetaFile(String name, String def) {
         try {
-            return new String(Constants.class.getResource("/meta/" + name).openStream().readAllBytes(), StandardCharsets.UTF_8);
+            return new String(Config.class.getResource("/meta/" + name).openStream().readAllBytes(), StandardCharsets.UTF_8);
         } catch(IOException e) {
             return def;
         }
     }
     public static final String WDTK_VERSION = readMetaFile("wdtk-version", null).trim();
     public static final String TOOL_VERSION = readMetaFile("tool-version", null).trim();
+
+    public static String constructDBUri() {
+        final String dbHost = ObjectUtils.defaultIfNull(System.getenv("DB_HOST"), "localhost");
+        final String dbName = ObjectUtils.defaultIfNull(System.getenv("DB_NAME"), "wdumper");
+        final String dbUser = ObjectUtils.defaultIfNull(System.getenv("DB_USER"), "root");
+        final String dbPassword = ObjectUtils.defaultIfNull(System.getenv("DB_PASSWORD"), "");
+
+        return "jdbc:mysql://" + dbHost + "/" + dbName + "?sslMode=DISABLED&user=" + dbUser + "&password=" + dbPassword;
+    }
 }

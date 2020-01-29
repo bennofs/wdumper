@@ -39,6 +39,9 @@ package io.github.bennofs.jooq;
 
 import static org.jooq.tools.StringUtils.isBlank;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.OutputStreamWriter;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -88,7 +91,7 @@ public class LiquibaseDatabase extends H2Database {
         if (connection == null) {
             String scripts = getProperties().getProperty("scripts");
             String unqualifiedSchema = getProperties().getProperty("unqualifiedSchema", "none").toLowerCase();
-            includeLiquibaseTables = Boolean.valueOf(getProperties().getProperty("includeLiquibaseTables", "false"));
+            includeLiquibaseTables = Boolean.parseBoolean(getProperties().getProperty("includeLiquibaseTables", "false"));
 
             publicIsDefault = "none".equals(unqualifiedSchema);
 
@@ -102,7 +105,7 @@ public class LiquibaseDatabase extends H2Database {
                 Properties info = new Properties();
                 info.put("user", "sa");
                 info.put("password", "");
-                connection = new org.h2.Driver().connect("jdbc:h2:mem:jooq-meta-extensions-" + UUID.randomUUID(), info);
+                connection = new org.h2.Driver().connect("jdbc:h2:mem:jooq-meta-extensions-" + UUID.randomUUID() + ";DATABASE_TO_UPPER=false", info);
 
                 Database database = DatabaseFactory.getInstance().findCorrectDatabaseImplementation(new JdbcConnection(connection));
                 Liquibase liquibase = new Liquibase(scripts, new FileSystemResourceAccessor(), database);

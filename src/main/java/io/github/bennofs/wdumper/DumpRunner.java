@@ -66,7 +66,7 @@ public class DumpRunner {
     }
 
     public void run(RunnerStatusHandler runnerStatusHandler) {
-        final EntityDocumentDumpProcessor progressProcessor = new ProgressReporter(Constants.PROGRESS_INTERVAL, runnerStatusHandler);
+        final EntityDocumentDumpProcessor progressProcessor = new ProgressReporter(Config.PROGRESS_INTERVAL, runnerStatusHandler);
 
         Stream.concat(serializers.stream(), Stream.of(progressProcessor)).forEach(processor -> {
             processor.open();

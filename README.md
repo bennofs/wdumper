@@ -48,3 +48,4 @@ $ java -jar build/wdumper-all.jar /path/to/wikidata-20191111-all.json.gz
 | ZENODO_SANDBOX_TOKEN | API token for uploads to zenodo sandbox   |                              |
 | ZENODO_TOKEN         | API token for uploads to main zenodo      |                              |
 | DUMPS_PATH           | path where the generated dumps are stored | frontend/dumpfiles/generated |
+| PUBLIC_URL           | Public URL pointing to the web server     | http://localhost:5050/       |

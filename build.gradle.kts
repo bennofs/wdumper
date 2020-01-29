@@ -1,7 +1,3 @@
-import org.jooq.meta.jaxb.Database
-import org.jooq.meta.jaxb.Generator
-import org.jooq.meta.jaxb.Property
-
 plugins {
     // Apply the java plugin to add support for Java
     java
@@ -17,6 +13,9 @@ plugins {
 
     // JOOQ code generation plugin for database access
     id("nu.studer.jooq").version("4.1")
+
+    // Ratpack Web Framework
+    id("io.ratpack.ratpack-java").version("1.7.6")
 }
 
 java.sourceCompatibility = JavaVersion.VERSION_1_8
@@ -82,21 +81,23 @@ dependencies {
     // Liquibase dependencies
     liquibaseRuntime("org.liquibase:liquibase-core:3.8.5")
     liquibaseRuntime("mysql:mysql-connector-java:8.0.16")
+    // Ratpack modules
+    implementation(ratpack.dependency("hikari"))
 }
 
 application {
     // Define the main class for the application
-    mainClassName = "io.github.bennofs.wdumper.App"
+    mainClassName = "io.github.bennofs.wdumper.Api"
 }
 
 task<JavaExec>("run-backend") {
     classpath = sourceSets["main"].runtimeClasspath
-    main = application.mainClassName
+    main = "io.github.bennofs.wdumper.Backend"
     workingDir = project.rootDir
     args = listOf(project.rootDir.resolve("data/slice.json.zst").toString())
 }
 
-val changeLogFile by project.extra { project.rootDir.resolve("src/main/resources/database.xml").absolutePath }
+val changeLogFile by project.extra { project.rootDir.resolve("src/main/resources/db/changelog.xml").absolutePath }
 apply(from = "./jooq.gradle")
 
 // Development defaults. Make sure these match the defaults in the README

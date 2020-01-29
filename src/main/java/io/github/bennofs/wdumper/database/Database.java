@@ -1,6 +1,6 @@
 package io.github.bennofs.wdumper.database;
 
-import io.github.bennofs.wdumper.Constants;
+import io.github.bennofs.wdumper.Config;
 import io.github.bennofs.wdumper.interfaces.DumpStatusHandler;
 import io.github.bennofs.wdumper.jooq.enums.DumpErrorLevel;
 import org.jooq.*;
@@ -42,15 +42,15 @@ public class Database {
             // at the end, we then collect all the runs that were assigned this token
             final int runId = transaction
                     .insertInto(RUN, RUN.TOOL_VERSION, RUN.WDTK_VERSION, RUN.DUMP_DATE)
-                    .values(Constants.TOOL_VERSION, Constants.WDTK_VERSION, dumpVersion)
+                    .values(Config.TOOL_VERSION, Config.WDTK_VERSION, dumpVersion)
                     .returning(RUN.ID)
                     .fetchOne()
                     .into(int.class);
 
             // define a window: only assign dumps if all dumps are older than ageTop, or at least one dump is older
             // than ageBottom
-            final Field<Timestamp> ageTop = DSL.timestampSub(DSL.currentTimestamp(), Constants.RECENT_MIN_MINUTES, DatePart.MINUTE);
-            final Field<Timestamp> ageBottom = DSL.timestampSub(DSL.currentTimestamp(), Constants.RECENT_MAX_MINUTES, DatePart.MINUTE);
+            final Field<Timestamp> ageTop = DSL.timestampSub(DSL.currentTimestamp(), Config.RECENT_MIN_MINUTES, DatePart.MINUTE);
+            final Field<Timestamp> ageBottom = DSL.timestampSub(DSL.currentTimestamp(), Config.RECENT_MAX_MINUTES, DatePart.MINUTE);
             final Condition debounceCond = DSL.or(
                     DSL.max(DUMP.CREATED_AT).lt(ageTop),
                     DSL.min(DUMP.CREATED_AT).lt(ageBottom)
