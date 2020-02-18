@@ -7,7 +7,7 @@ import java.io.Closeable;
 import java.util.Timer;
 import java.util.TimerTask;
 
-class UploadProgressMonitor implements ProgressMonitor, Closeable {
+class UploadProgressMonitor implements io.github.bennofs.wdumper.ext.UploadProgressMonitor, Closeable {
     private final Database db;
     private final int id;
     private long progress;
@@ -32,7 +32,7 @@ class UploadProgressMonitor implements ProgressMonitor, Closeable {
     }
 
     @Override
-    public void accept(String field, String fileName, Long bytesWritten, Long totalBytes) {
+    public void accept(long bytesWritten, long totalBytes) {
         this.progress = bytesWritten;
     }
 

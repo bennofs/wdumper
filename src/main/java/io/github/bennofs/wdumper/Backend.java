@@ -10,12 +10,17 @@ import io.github.bennofs.wdumper.interfaces.DumpStatusHandler;
 import io.github.bennofs.wdumper.interfaces.RunnerStatusHandler;
 import io.github.bennofs.wdumper.processors.FilteredRdfSerializer;
 import io.github.bennofs.wdumper.spec.DumpSpec;
-import io.github.bennofs.wdumper.zenodo.Zenodo;
+import io.github.bennofs.wdumper.zenodo.ZenodoApi;
+import org.apache.http.client.HttpClient;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.impl.client.HttpClientBuilder;
 import org.wikidata.wdtk.dumpfiles.MwDumpFile;
 import picocli.CommandLine;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.net.URI;
 import java.nio.file.Path;
 import java.sql.SQLException;
 import java.util.List;
@@ -36,11 +41,11 @@ public class Backend implements Runnable, Closeable {
     boolean usageHelpRequested;
 
     private final Database db;
-    private final Zenodo zenodo;
-    private final Zenodo zenodoSandbox;
+    private final ZenodoApi zenodo;
+    private final ZenodoApi zenodoSandbox;
     final Object runCompletedEvent;
 
-    private Backend(Database db, Zenodo zenodo, Zenodo zenodoSandbox) {
+    private Backend(Database db, ZenodoApi zenodo, ZenodoApi zenodoSandbox) {
         this.db = db;
         this.zenodo = zenodo;
         this.zenodoSandbox = zenodoSandbox;
@@ -144,8 +149,9 @@ public class Backend implements Runnable, Closeable {
         dataSource.setURL(dbUri);
         dataSource.setServerTimezone("UTC");
 
-        final Zenodo zenodo = new Zenodo("https://zenodo.org/api/", zenodoToken);
-        final Zenodo zenodoSandbox = new Zenodo("https://sandbox.zenodo.org/api/", zenodoSandboxToken);
+        final CloseableHttpClient http = HttpClientBuilder.create().build();
+        final ZenodoApi zenodo = new ZenodoApi(http, ZenodoApi.MAIN_URI, zenodoToken);
+        final ZenodoApi zenodoSandbox = new ZenodoApi(http, ZenodoApi.SANDBOX_URI, zenodoSandboxToken);
 
         return new Backend(new Database(dataSource), zenodo, zenodoSandbox);
     }

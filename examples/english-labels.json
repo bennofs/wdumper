@@ -1,0 +1,23 @@
+{
+  "statements": [
+    {
+      "references": false,
+      "simple": false,
+      "qualifiers": false,
+      "full": false
+    }
+  ],
+  "aliases": false,
+  "languages": [
+    "en",
+    "en-au",
+    "en-ca",
+    "en-gb",
+    "en-us"
+  ],
+  "entities": [],
+  "sitelinks": false,
+  "meta": true,
+  "descriptions": false,
+  "labels": true
+}

@@ -1,0 +1,16 @@
+{
+  "statements": [
+    {
+      "references": false,
+      "simple": false,
+      "qualifiers": false,
+      "full": false
+    }
+  ],
+  "aliases": false,
+  "entities": [],
+  "sitelinks": false,
+  "meta": false,
+  "descriptions": false,
+  "labels": false
+}

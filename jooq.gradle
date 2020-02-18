@@ -12,7 +12,6 @@ jooq {
                 }
             }
             generate {
-                daos = true
                 pojos = true
             }
             target {

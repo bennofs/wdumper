@@ -1,0 +1,33 @@
+{
+  "version": "1",
+  "sitelinks": false,
+  "descriptions": false,
+  "entities": [
+    {
+      "type": "item",
+      "properties": [
+        {
+          "type": "entityid",
+          "rank": "non-deprecated",
+          "property": "P31",
+          "id": 1,
+          "value": "Q101352"
+        }
+      ]
+    }
+  ],
+  "statements": [
+    {
+      "simple": true,
+      "rank": "all",
+      "references": false,
+      "full": false,
+      "qualifiers": false
+    }
+  ],
+  "aliases": false,
+  "meta": true,
+  "labels": true,
+  "seed": 132,
+  "samplingPercent": 90
+}

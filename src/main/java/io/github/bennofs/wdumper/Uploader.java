@@ -6,7 +6,7 @@ import io.github.bennofs.wdumper.database.DumpInfo;
 import io.github.bennofs.wdumper.database.ZenodoTask;
 import io.github.bennofs.wdumper.interfaces.DumpStatusHandler;
 import io.github.bennofs.wdumper.zenodo.Deposit;
-import io.github.bennofs.wdumper.zenodo.Zenodo;
+import io.github.bennofs.wdumper.zenodo.ZenodoApi;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -22,13 +22,13 @@ import java.util.zip.GZIPInputStream;
  */
 public class Uploader implements Runnable {
     private final Database db;
-    private final Zenodo zenodo;
-    private final Zenodo zenodoSandbox;
+    private final ZenodoApi zenodo;
+    private final ZenodoApi zenodoSandbox;
     private final Path outputDirectory;
     private final Object runCompletedEvent;
     private final ObjectMapper mapper;
 
-    public Uploader(Database db, Zenodo zenodo, Zenodo zenodoSandbox, Path outputDirectory, Object runCompletedEvent) {
+    public Uploader(Database db, ZenodoApi zenodo, ZenodoApi zenodoSandbox, Path outputDirectory, Object runCompletedEvent) {
         this.mapper = new ObjectMapper();
         this.db = db;
         this.zenodo = zenodo;
@@ -73,35 +73,35 @@ public class Uploader implements Runnable {
             try {
                 System.err.println("starting upload: " + task.toString());
 
-                final Zenodo api = task.target.equals("RELEASE") ? this.zenodo : this.zenodoSandbox;
+                final ZenodoApi api = task.target.equals("RELEASE") ? this.zenodo : this.zenodoSandbox;
                 final Path outputPath = DumpRunner.getOutputPath(outputDirectory, task.dump_id);
 
                 final Deposit deposit = api.getDeposit(task.deposit_id);
-                final Deposit.DepositFile[] files = deposit.getFiles();
+                final Deposit.DepositFile[] files = api.getFiles(deposit);
 
                 if (Arrays.stream(files).noneMatch(file -> file.filename.equals("wdumper-spec.json"))) {
                     final String dumpSpec = db.getDumpSpec(task.dump_id);
-                    deposit.addFile("wdumper-spec.json", dumpSpec, (field, fileName, bytesWritten, totalBytes) -> {
+                    api.addFile(deposit, "wdumper-spec.json", dumpSpec, (bytesWritten, totalBytes) -> {
                     });
                 }
 
                 // upload short preview in plain text, uncompressed
                 if (Arrays.stream(files).noneMatch(file -> file.filename.equals("preview.nt"))) {
                     final String preview = generatePreview(outputPath);
-                    deposit.addFile("preview.nt", preview, (field, fileName, bytesWritten, totalBytes) -> {
+                    api.addFile(deposit, "preview.nt", preview, (bytesWritten, totalBytes) -> {
                     });
                 }
 
                 if (Arrays.stream(files).noneMatch(file -> file.filename.equals("info.json"))) {
                     final DumpInfo info = db.getDumpInfo(task.dump_id);
-                    deposit.addFile("info.json", mapper.writeValueAsString(info), (field, fileName, bytesWritten, totalBytes) -> {
+                    api.addFile(deposit, "info.json", mapper.writeValueAsString(info), (bytesWritten, totalBytes) -> {
                     });
                 }
 
                 try (final UploadProgressMonitor progress = new UploadProgressMonitor(db, task.id)) {
-                    deposit.addFile(outputPath.getFileName().toString(), outputPath.toFile(), progress);
+                    api.addFile(deposit, outputPath.getFileName().toString(), Files.newInputStream(outputPath), Files.size(outputPath), progress);
                 }
-                deposit.publish();
+                api.publishDeposit(deposit);
 
                 System.err.println("finished upload: " + task.toString());
                 db.setUploadFinished(task.id);

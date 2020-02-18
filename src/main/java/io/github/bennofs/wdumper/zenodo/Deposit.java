@@ -1,98 +1,34 @@
 package io.github.bennofs.wdumper.zenodo;
 
-import com.fasterxml.jackson.annotation.*;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.MoreObjects;
-import io.github.bennofs.wdumper.ext.ProgressHttpEntityWrapper;
-import kong.unirest.HttpResponse;
-import kong.unirest.ProgressMonitor;
-import kong.unirest.UnirestInstance;
-import org.apache.commons.io.IOUtils;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpPut;
-import org.apache.http.entity.FileEntity;
-import org.apache.http.impl.client.HttpClientBuilder;
-import org.apache.http.message.BasicHeader;
-
-import java.io.File;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.stream.Collectors;
 
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class Deposit {
     @JsonIgnoreProperties(ignoreUnknown = true)
-    public static class DOI {
-        final String doi;
-
-        @JsonCreator
-        public DOI(@JsonProperty("doi") String doi) {
-            this.doi = doi;
-        }
-    }
-
-    @JsonIgnoreProperties(ignoreUnknown = true)
-    public static class Metadata {
-        final DOI prereserve_doi;
-
-        @JsonCreator
-        public Metadata(
-                @JsonProperty("prereserve_doi") DOI prereserve_doi
-        ) {
-            this.prereserve_doi = prereserve_doi;
-        }
-    }
-
-    public static class Creator {
-        public final String name;
-
-        @JsonInclude(JsonInclude.Include.NON_NULL)
-        public final String affiliation;
-
-        public Creator(String name, String affiliation) {
-            Objects.requireNonNull(name);
-
-            this.name = name;
-            this.affiliation = affiliation;
-        }
-    }
-
-    @JsonIgnoreProperties(ignoreUnknown = true)
     public static class FileLinks {
-        public final String download;
-        public final String self;
+        public String download;
+        public String self;
 
-        @JsonCreator
-        public FileLinks(
-                @JsonProperty("download") String download,
-                @JsonProperty("self") String self
-        ) {
-            this.download = download;
-            this.self = self;
+        @Override
+        public String toString() {
+            return MoreObjects.toStringHelper(this)
+                    .add("download", download)
+                    .add("self", self)
+                    .toString();
         }
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class DepositFile {
-        public final String filename;
-        public final String checksum;
-        public final String id;
-        public final FileLinks links;
+        public String filename;
+        public String checksum;
+        public String id;
 
-        public DepositFile(
-                @JsonProperty("filename") String filename,
-                @JsonProperty("checksum") String checksum,
-                @JsonProperty("id") String id,
-                @JsonProperty("links") FileLinks links
-        ) {
-            this.filename = filename;
-            this.checksum = checksum;
-            this.id = id;
-            this.links = links;
-        }
+        @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
+        FileLinks links;
 
         @Override
         public String toString() {
@@ -106,79 +42,41 @@ public class Deposit {
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class Links {
-        final String discard;
-        final String edit;
-        final String files;
-        final String publish;
-        final String newversion;
-        final String bucket;
-        final String self;
+        public String discard;
+        public String edit;
+        public String files;
+        public String publish;
+        public String newversion;
+        public String bucket;
+        public String self;
 
-        @JsonCreator
-        public Links(
-                @JsonProperty("discard") String discard,
-                @JsonProperty("edit") String edit,
-                @JsonProperty("files") String files,
-                @JsonProperty("publish") String publish,
-                @JsonProperty("newversion") String newversion,
-                @JsonProperty("bucket") String bucket,
-                @JsonProperty("self") String self
-        ) {
-            this.discard = discard;
-            this.edit = edit;
-            this.files = files;
-            this.publish = publish;
-            this.newversion = newversion;
-            this.bucket = bucket;
-            this.self = self;
+        @Override
+        public String toString() {
+            return MoreObjects.toStringHelper(this)
+                    .add("discard", discard)
+                    .add("edit", edit)
+                    .add("files", files)
+                    .add("publish", publish)
+                    .add("newversion", newversion)
+                    .add("bucket", bucket)
+                    .add("self", self)
+                    .toString();
         }
     }
 
-    private final UnirestInstance unirest;
-    private String doi;
-    private final int id;
-    private final Links links;
+    public Metadata metadata;
 
-    @JsonCreator
-    public Deposit(
-            @JacksonInject("unirest") UnirestInstance unirest,
-            @JsonProperty("metadata") Metadata metadata,
-            @JsonProperty("id") int id,
-            @JsonProperty("links") Links links
-    ) {
-        this.unirest = unirest;
-        this.doi = metadata.prereserve_doi.doi;
-        this.id = id;
-        this.links = links;
-    }
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
+    public
+    int id;
 
-    public String getDoi() {
-        return doi;
-    }
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
+    Links links;
 
-    public int getId() {
-        return id;
-    }
-
-    public void discard() throws ZenodoException {
+    /*public void discard() throws ZenodoException {
         final HttpResponse<String> response = this.unirest.post(this.links.discard)
                 .header("Content-Type", "application/json")
                 .asString();
-        if (!response.isSuccess())
-            Zenodo.handleError(response);
-    }
-
-    public void delete() throws ZenodoException {
-        final HttpResponse<String> response = this.unirest.delete(this.links.self)
-                .header("Content-Type", "application/json")
-                .asString();
-        if (!response.isSuccess())
-            Zenodo.handleError(response);
-    }
-
-
-    public void publish() throws ZenodoException {
-        final HttpResponse<String> response = this.unirest.post(this.links.publish).asString();
         if (!response.isSuccess())
             Zenodo.handleError(response);
     }
@@ -251,5 +149,5 @@ public class Deposit {
                 .add("doi", doi)
                 .add("id", id)
                 .toString();
-    }
+    }*/
 }
