@@ -16,6 +16,9 @@ plugins {
 
     // Ratpack Web Framework
     id("io.ratpack.ratpack-java").version("1.7.6")
+
+    // Generate type script definitions from Java POJOs
+    id("cz.habarta.typescript-generator") version "2.19.577"
 }
 
 java.sourceCompatibility = JavaVersion.toVersion("11")
@@ -172,4 +175,12 @@ val generateWDTKVersion by tasks.registering {
 tasks.register("generateResources") {
     dependsOn(generateToolVersion)
     dependsOn(generateWDTKVersion)
+}
+
+tasks.generateTypeScript {
+    jsonLibrary = cz.habarta.typescript.generator.JsonLibrary.jackson2
+    outputFileType = cz.habarta.typescript.generator.TypeScriptFileType.declarationFile
+    outputFile = project.rootDir.resolve("src/web/types/generated-json.d.ts").absolutePath
+    outputKind = cz.habarta.typescript.generator.TypeScriptOutputKind.global
+    classPatterns = listOf("io.github.bennofs.wdumper.spec.DumpSpecJson", "io.github.bennofs.wdumper.api.**Request")
 }
