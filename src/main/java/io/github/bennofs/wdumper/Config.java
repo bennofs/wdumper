@@ -24,15 +24,15 @@ public class Config {
     // maximum size of the preview in bytes that is generated for zenodo uploads
     public static final int PREVIEW_SIZE = 0x100000;
 
-    private static String readMetaFile(String name, String def) {
+    private static String readMetaFile(String name) {
         try {
             return new String(Config.class.getResource("/meta/" + name).openStream().readAllBytes(), StandardCharsets.UTF_8);
-        } catch(IOException e) {
-            return def;
+        } catch (IOException e) {
+            throw new RuntimeException("initialization error: version information could not be read", e);
         }
     }
-    public static final String WDTK_VERSION = readMetaFile("wdtk-version", null).trim();
-    public static final String TOOL_VERSION = readMetaFile("tool-version", null).trim();
+    public static final String WDTK_VERSION = readMetaFile("wdtk-version").trim();
+    public static final String TOOL_VERSION = readMetaFile("tool-version").trim();
 
     public static String constructDBUri() {
         final String dbHost = ObjectUtils.defaultIfNull(System.getenv("DB_HOST"), "localhost");
