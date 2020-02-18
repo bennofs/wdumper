@@ -100,6 +100,28 @@ public class DumpRunner {
     }
 
     /**
+     * Helper class that joins a thread on a call to close, to ensure that the output stream has really been closed.
+     */
+    private static final class SyncCloseOutputStream extends FilterOutputStream {
+        private final Thread worker;
+
+        public SyncCloseOutputStream(OutputStream out, Thread worker) {
+            super(out);
+            this.worker = worker;
+        }
+
+        @Override
+        public void close() throws IOException {
+            super.close();
+            try {
+                worker.join();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    /**
      * Creates a separate thread for writing into the given output stream and
      * returns a pipe output stream that can be used to pass data to this
      * thread.
@@ -119,24 +141,24 @@ public class DumpRunner {
         final int SIZE = 1024 * 1024 * 10;
         final PipedOutputStream pos = new PipedOutputStream();
         final PipedInputStream pis = new PipedInputStream(pos, SIZE);
-        new Thread(new Runnable() {
+        final Thread worker = new Thread(new Runnable() {
             @Override
             public void run() {
                 try {
                     byte[] bytes = new byte[SIZE];
-                    for (int len; (len = pis.read(bytes)) > 0;) {
+                    for (int len; (len = pis.read(bytes)) > 0; ) {
                         outputStream.write(bytes, 0, len);
                     }
                 } catch (IOException ioException) {
                     ioException.printStackTrace();
                 } finally {
-                    System.out.println("closing output stream");
                     close(pis);
                     close(outputStream);
                 }
             }
-        }, "async-output-stream").start();
-        return pos;
+        }, "async-output-stream");
+        worker.start();
+        return new SyncCloseOutputStream(pos, worker);
     }
 
     /**
