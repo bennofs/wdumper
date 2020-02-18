@@ -71,8 +71,10 @@ dependencies {
     implementation("com.konghq:unirest-objectmapper-jackson:2.3.08")
     implementation("org.apache.httpcomponents:httpclient:4.5.9")
 
-    // Use JUnit test framework
-    testImplementation("junit:junit:4.12")
+    // Use JUnit test framework and assert libraries
+    testImplementation("org.junit.jupiter:junit-jupiter-api:5.6.0");
+    testImplementation("org.assertj:assertj-core:3.11.1")
+    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.6.0");
 
     // JOOQ
     implementation("org.jooq:jooq")
