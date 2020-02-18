@@ -18,8 +18,8 @@ plugins {
     id("io.ratpack.ratpack-java").version("1.7.6")
 }
 
-java.sourceCompatibility = JavaVersion.VERSION_1_8
-java.targetCompatibility = JavaVersion.VERSION_1_8
+java.sourceCompatibility = JavaVersion.toVersion("11")
+java.targetCompatibility = JavaVersion.toVersion("11")
 
 sourceSets.main.configure {
     resources {
