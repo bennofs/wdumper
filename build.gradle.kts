@@ -35,6 +35,7 @@ repositories {
     maven { url = uri("https://jitpack.io") }
 }
 
+val autoValueVersion = "1.7";
 dependencies {
     // This dependency is found on compile classpath of this component and consumers.
     implementation("com.google.guava:guava:27.0.1-jre")
@@ -81,8 +82,13 @@ dependencies {
     // Liquibase dependencies
     liquibaseRuntime("org.liquibase:liquibase-core:3.8.5")
     liquibaseRuntime("mysql:mysql-connector-java:8.0.16")
+
     // Ratpack modules
     implementation(ratpack.dependency("hikari"))
+
+    // AutoValue
+    implementation("com.google.auto.value:auto-value-annotations:${autoValueVersion}")
+    annotationProcessor("com.google.auto.value:auto-value:${autoValueVersion}")
 }
 
 application {
