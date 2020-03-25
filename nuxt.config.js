@@ -24,11 +24,13 @@ export default {
   ** Global CSS
   */
   css: [
+      "minireset.css",
   ],
   /*
   ** Plugins to load before mounting the App
   */
   plugins: [
+      '~/plugins/composition.js'
   ],
   /*
   ** Nuxt.js dev-modules
@@ -57,6 +59,17 @@ export default {
     ** You can extend webpack config here
     */
     extend (config, ctx) {
+    },
+
+    postcss: {
+      plugins: {
+        'postcss-import': false
+      }
     }
-  }
+  },
+
+  /*
+   ** Output directory of the build
+   */
+  buildDir: "build/nuxt",
 }

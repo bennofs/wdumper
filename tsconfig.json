@@ -31,6 +31,9 @@
   "include": [
     "src/web/**/*"
   ],
+  "files": [
+    "src/web/types/vue-shims.d.ts"
+  ],
   "exclude": [
     "node_modules"
   ]
