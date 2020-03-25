@@ -144,6 +144,11 @@ public class RunnerFullTests {
     }
 
     @Test
+    void testPoliticians() throws IOException {
+        runDump("examples/politicians.json");
+    }
+
+    @Test
     void testParallel() throws IOException {
 
     }

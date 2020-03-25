@@ -1,0 +1,34 @@
+{
+  "sitelinks": true,
+  "descriptions": true,
+  "version": "1",
+  "entities": [
+    {
+      "type": "property",
+      "id": 2,
+      "properties": [
+        {
+          "type": "entityid",
+          "rank": "non-deprecated",
+          "property": "P106",
+          "id": 1,
+          "value": "Q82955"
+        }
+      ]
+    }
+  ],
+  "statements": [
+    {
+      "id": 0,
+      "references": false,
+      "simple": true,
+      "rank": "all",
+      "full": false,
+      "qualifiers": false
+    }
+  ],
+  "aliases": true,
+  "meta": true,
+  "labels": true
+}
+   
