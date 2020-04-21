@@ -36,20 +36,14 @@ export default {
   ** Nuxt.js dev-modules
   */
   buildModules: [
-    '@nuxt/typescript-build'
+    '@nuxt/typescript-build',
+    '@nuxtjs/proxy',
   ],
   /*
-  ** Nuxt.js modules
+  ** Proxy for development
   */
-  modules: [
-    // Doc: https://axios.nuxtjs.org/usage
-    '@nuxtjs/axios',
-  ],
-  /*
-  ** Axios module configuration
-  ** See https://axios.nuxtjs.org/options
-  */
-  axios: {
+  proxy: {
+    "/api": "http://localhost:5050",
   },
   /*
   ** Build configuration
