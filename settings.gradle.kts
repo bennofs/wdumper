@@ -8,7 +8,6 @@
  */
 
 rootProject.name = "wdumper"
-include("jooq-liquibase")
 
 pluginManagement {
     repositories {

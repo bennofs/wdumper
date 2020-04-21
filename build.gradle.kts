@@ -81,7 +81,7 @@ dependencies {
 
     // JOOQ
     implementation("org.jooq:jooq")
-    jooqRuntime(project(":jooq-liquibase"))
+    jooqRuntime("org.jooq:jooq-meta-extensions:3.13.1")
     jooqRuntime("org.liquibase:liquibase-core:3.8.5")
 
     // Liquibase dependencies

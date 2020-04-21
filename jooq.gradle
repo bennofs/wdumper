@@ -1,9 +1,9 @@
 jooq {
-    version = "3.12.3"
+    version = "3.13.1"
     liquibase(sourceSets.main) {
         generator {
             database {
-                name = "io.github.bennofs.jooq.LiquibaseDatabase"
+                name = "org.jooq.meta.extensions.liquibase.LiquibaseDatabase"
                 properties {
                     property {
                         key = "scripts"
@@ -16,6 +16,7 @@ jooq {
             }
             target {
                 packageName = "io.github.bennofs.wdumper.jooq"
+                directory = "${project.buildDir}/generated/sources/jooq"
             }
         }
 
@@ -24,3 +25,4 @@ jooq {
 }
 
 tasks.generateLiquibaseJooqSchemaSource.inputs.file(project.ext.changeLogFile)
+tasks.generateLiquibaseJooqSchemaSource.outputs.dir("${project.buildDir}/generated/sources/jooq")
