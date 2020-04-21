@@ -1,16 +1,21 @@
 package io.github.bennofs.wdumper;
 
 import com.google.common.base.MoreObjects;
+import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
-import com.google.inject.Singleton;
 import io.github.bennofs.wdumper.api.*;
+import io.github.bennofs.wdumper.jooq.enums.ZenodoTarget;
+import io.github.bennofs.wdumper.zenodo.ZenodoApiProvider;
+import io.github.bennofs.wdumper.zenodo.ZenodoApiProviderImpl;
+import io.github.bennofs.wdumper.zenodo.ZenodoConfiguration;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClientBuilder;
 import org.jooq.Configuration;
 import org.jooq.DSLContext;
 import org.jooq.SQLDialect;
 import org.jooq.impl.DSL;
 import org.jooq.impl.DefaultConfiguration;
 import ratpack.func.Action;
-import ratpack.guice.ConfigurableModule;
 import ratpack.guice.Guice;
 import ratpack.handling.Chain;
 import ratpack.hikari.HikariModule;
@@ -18,6 +23,7 @@ import ratpack.server.BaseDir;
 import ratpack.server.RatpackServer;
 import ratpack.server.ServerConfig;
 
+import javax.inject.Singleton;
 import javax.sql.DataSource;
 import java.net.URI;
 
@@ -27,7 +33,15 @@ import java.net.URI;
  */
 @Singleton
 public class Api {
-    public static class ApiModule extends ConfigurableModule<ApiConfiguration> {
+    public static class ApiModule extends AbstractModule {
+        private final ZenodoConfiguration zenodoConfiguration;
+        private final ApiConfiguration apiConfiguration;
+
+        public ApiModule(ZenodoConfiguration zenodoConfiguration, ApiConfiguration apiConfiguration) {
+            this.zenodoConfiguration = zenodoConfiguration;
+            this.apiConfiguration = apiConfiguration;
+        }
+
         @Provides
         DSLContext db(DataSource dataSource) {
             final Configuration configuration = new DefaultConfiguration();
@@ -36,12 +50,22 @@ public class Api {
             return DSL.using(configuration);
         }
 
+        @Provides @Singleton
+        CloseableHttpClient httpClient() {
+            return HttpClientBuilder.create()
+                    .build();
+        }
+
         @Override
         protected void configure() {
+            bind(ZenodoConfiguration.class).toInstance(zenodoConfiguration);
+            bind(ApiConfiguration.class).toInstance(apiConfiguration);
+
             bind(DumpComponent.class);
             bind(DownloadComponent.class);
             bind(StatusComponent.class);
             bind(ZenodoComponent.class);
+            bind(ZenodoApiProvider.class).to(ZenodoApiProviderImpl.class);
         }
     }
 
@@ -50,7 +74,16 @@ public class Api {
                 MoreObjects.firstNonNull(System.getenv("PUBLIC_URL"), "http://localhost:5050")
         );
         final String root = publicAddress.getPath().replaceAll("/+$|^/+", "");
-        final String apiRoot = (root.isEmpty() ? "" : ("/" + root)) + "/api";
+
+        final var zenodoConfiguration = ZenodoConfiguration.builder()
+                .releaseToken(Config.getZenodoToken(ZenodoTarget.RELEASE))
+                .sandboxToken(Config.getZenodoToken(ZenodoTarget.SANDBOX))
+                .build();
+
+        final ApiConfiguration apiConfig = ApiConfiguration.builder()
+                .publicAddress(publicAddress)
+                .apiRoot((root.isEmpty() ? "" : ("/" + root)) + "/api")
+                .build();
 
         final Action<Chain> topRoutes = chain -> chain
                 .prefix("api", api -> {
@@ -73,10 +106,7 @@ public class Api {
                             hikariConfig.setDataSourceClassName("com.mysql.cj.jdbc.MysqlDataSource");
                             hikariConfig.addDataSourceProperty("URL", Config.constructDBUri());
                         })
-                        .module(ApiModule.class, apiConfig -> {
-                            apiConfig.apiRoot(apiRoot);
-                            apiConfig.publicAddress(publicAddress);
-                        })
+                        .module(new ApiModule(zenodoConfiguration, apiConfig))
                 ))
                 .handlers(chain -> {
                     final String prefix = publicAddress.getPath().replaceAll("/+$|^/+", "");

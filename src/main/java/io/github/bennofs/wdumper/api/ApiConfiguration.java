@@ -1,23 +1,30 @@
 package io.github.bennofs.wdumper.api;
 
+import com.google.auto.value.AutoValue;
+
 import java.net.URI;
 
-public class ApiConfiguration {
+@AutoValue
+public abstract class ApiConfiguration {
     /**
      * Root URL of the API used by the frontend.
      */
-    public String apiRoot;
+    public abstract String apiRoot();
 
     /**
      * Address of the frontend user interface.
      */
-    public URI publicAddress;
+    public abstract URI publicAddress();
 
-    public void apiRoot(String root) {
-        this.apiRoot = root;
+    public static Builder builder() {
+        return new AutoValue_ApiConfiguration.Builder();
     }
 
-    public void publicAddress(URI publicAddress) {
-        this.publicAddress = publicAddress;
+    @AutoValue.Builder
+    public abstract static class Builder {
+        public abstract Builder apiRoot(String apiRoot);
+        public abstract Builder publicAddress(URI publicAddress);
+
+        public abstract ApiConfiguration build();
     }
 }

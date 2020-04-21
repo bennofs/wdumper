@@ -57,7 +57,7 @@ public class DumpComponent implements Action<Chain> {
         record.setSpec(objectWriter.writeValueAsString(request.spec));
         record.store();
 
-        ctx.redirect(201, configuration.apiRoot + "/dump/" + record.getId());
+        ctx.redirect(201, configuration.apiRoot() + "/dump/" + record.getId());
     }
 
     /**

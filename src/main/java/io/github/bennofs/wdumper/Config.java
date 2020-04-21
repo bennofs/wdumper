@@ -1,5 +1,6 @@
 package io.github.bennofs.wdumper;
 
+import io.github.bennofs.wdumper.jooq.enums.ZenodoTarget;
 import org.apache.commons.lang3.ObjectUtils;
 
 import java.io.IOException;
@@ -41,5 +42,16 @@ public class Config {
         final String dbPassword = ObjectUtils.defaultIfNull(System.getenv("DB_PASSWORD"), "");
 
         return "jdbc:mysql://" + dbHost + "/" + dbName + "?sslMode=DISABLED&user=" + dbUser + "&password=" + dbPassword;
+    }
+
+    public static String getZenodoToken(ZenodoTarget target) {
+        Objects.requireNonNull(target, "zenodo target cannot be null");
+        switch (target) {
+            case SANDBOX:
+                return System.getenv("ZENODO_SANDBOX_TOKEN");
+            case RELEASE:
+                return System.getenv("ZENODO_TOKEN");
+        };
+        throw new RuntimeException("switch should be exhaustive");
     }
 }

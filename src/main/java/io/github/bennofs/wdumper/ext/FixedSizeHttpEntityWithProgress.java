@@ -96,6 +96,7 @@ public class FixedSizeHttpEntityWithProgress implements HttpEntity {
     }
 
     @Override
+    @Deprecated
     public void consumeContent() throws IOException {
     }
 }

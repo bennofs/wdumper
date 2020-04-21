@@ -43,9 +43,9 @@ public class ZenodoComponent implements Action<Chain> {
         return String.format("<p>RDF dump of wikidata produced with <a href=\"%s\">wdumper</a>.</p>" +
                 "<p>%s<br><a href=\"%s\">View on wdumper</a></p>" +
                 "<p><b>entity count<b>: %d, <b>statement count</b>: %d, <b>triple count</b>: %d</p>",
-                configuration.publicAddress.toASCIIString(),
+                configuration.publicAddress().toASCIIString(),
                 dump.getDescription(),
-                configuration.publicAddress.resolve("dump/" + dump.getId()),
+                configuration.publicAddress().resolve("dump/" + dump.getId()),
                 dump.getEntityCount(),
                 dump.getStatementCount(),
                 dump.getTripleCount()
@@ -80,7 +80,7 @@ public class ZenodoComponent implements Action<Chain> {
                 .returning(ZENODO.ID)
                 .execute();
 
-        ctx.redirect(201, configuration.apiRoot + "/zenodo/" + zenodoId);
+        ctx.redirect(201, configuration.apiRoot() + "/zenodo/" + zenodoId);
     }
 
     private void get(Context ctx, int id) {
