@@ -1,22 +1,22 @@
 <template>
     <div>
-      <Section class="entity-selection" :title='"Step 1: Select entities to export"'>
-        <template v-slot:graphic v-bind:value="this.entityCount">
+      <LayoutSection class="entity-selection" :title='"Step 1: Select entities to export"'>
+        <template v-slot:visual v-bind:value="this.entityCount">
           <MultiLevelPieChart class="chart-entity-count" :max-value="80000000" v-bind:value="+entityCount" />
         </template>
         <input type="text" v-model="entityCount" />
-      </Section>
+      </LayoutSection>
     </div>
 </template>
 
 <script lang="ts">
     import Vue from 'vue';
-    import Section from '~/components/Section.vue';
+    import LayoutSection from '~/components/LayoutSection.vue';
     import MultiLevelPieChart from "~/components/MultiLevelPieChart.vue";
 
     export default Vue.extend({
         components: {
-            Section,
+            LayoutSection,
             MultiLevelPieChart
         },
 

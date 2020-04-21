@@ -37,3 +37,9 @@
         },
     })
 </script>
+
+<style scoped>
+p {
+    line-height: 1.5rem;
+}
+</style>

@@ -7,9 +7,6 @@
 
 <script lang="ts">
     import Vue from 'vue';
-    import VSep from '~/components/VSep.vue';
-    import StatementPattern from '~/components/StatementPattern.vue';
-    import StatementPatternRank from '~/components/StatementPatternRank.vue';
     import BaseCheckbox from "~/components/BaseCheckbox.vue";
 
     const exampleValue = {
@@ -27,9 +24,6 @@
         },
         components: {
             BaseCheckbox,
-            VSep,
-            StatementPattern,
-            StatementPatternRank,
         }
     })
 </script>

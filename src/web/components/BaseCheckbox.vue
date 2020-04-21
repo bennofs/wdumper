@@ -39,9 +39,6 @@
     @include sr-only;
   }
 
-  .control {
-  }
-
   .control-indicator {
     user-select: none;
     display: inline-block;

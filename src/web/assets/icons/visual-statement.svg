@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="SVGRoot" width="57.319" height="18" version="1.1" viewBox="0 0 57.319 18" xmlns="http://www.w3.org/2000/svg">
+ <g transform="translate(-2,-19)">
+  <circle cx="11" cy="28" r="9" fill="#900000"/>
+  <circle cx="50.319" cy="28" r="9" fill="#306090"/>
+  <rect x="24.159" y="24.114" width="13" height="1.7727" fill="#309060"/>
+  <rect x="24.159" y="30.114" width="13" height="1.7727" fill="#309060"/>
+ </g>
+</svg>
