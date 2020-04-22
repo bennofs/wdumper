@@ -12,13 +12,13 @@ plugins {
     id("org.liquibase.gradle").version("2.0.2")
 
     // JOOQ code generation plugin for database access
-    id("nu.studer.jooq").version("4.1")
+    id("nu.studer.jooq").version("4.2")
 
     // Ratpack Web Framework
     id("io.ratpack.ratpack-java").version("1.7.6")
 
     // Generate type script definitions from Java POJOs
-    id("cz.habarta.typescript-generator") version "2.19.577"
+    id("cz.habarta.typescript-generator") version "2.22-SNAPSHOT"
 }
 
 java.sourceCompatibility = JavaVersion.toVersion("11")
@@ -50,11 +50,14 @@ dependencies {
     implementation("com.github.Wikidata.Wikidata-Toolkit:wdtk-rdf:0afe49fef56a6da58a8f8fd3f023a56920c04f3b")
     implementation("info.picocli:picocli:4.0.0-alpha-3")
 
+    // Template rendering
+    implementation("com.github.spullara.mustache.java:compiler:0.9.6")
+
     // To support zstd compressed dumps
     implementation("com.github.luben:zstd-jni:1.4.0-1")
 
     // RDF processing
-    runtime("org.eclipse.rdf4j:rdf4j-rio-ntriples:2.5.4")
+    runtimeOnly("org.eclipse.rdf4j:rdf4j-rio-ntriples:2.5.4")
 
     // logging implementation
     runtimeOnly("org.slf4j:slf4j-simple:1.7.26")
@@ -63,15 +66,10 @@ dependencies {
     implementation("com.fasterxml.jackson:jackson-bom:2.9.9")
     implementation("com.fasterxml.jackson.module:jackson-module-parameter-names:2.9.9")
 
-    // jdbi
-    implementation("org.jdbi:jdbi3-core:3.8.2")
-
     // mysql
     implementation("mysql:mysql-connector-java:8.0.16")
 
     // HTTP rest client
-    implementation("com.konghq:unirest-java:2.3.08")
-    implementation("com.konghq:unirest-objectmapper-jackson:2.3.08")
     implementation("org.apache.httpcomponents:httpclient:4.5.9")
 
     // Use JUnit test framework and assert libraries

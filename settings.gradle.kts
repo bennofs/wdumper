@@ -14,11 +14,14 @@ pluginManagement {
         mavenCentral()
         gradlePluginPortal()
         jcenter()
+        maven { url = uri("https://jitpack.io") }
     }
     resolutionStrategy {
         eachPlugin {
             if (requested.id.id == "cz.habarta.typescript-generator") {
-                useModule("cz.habarta.typescript-generator:typescript-generator-gradle-plugin:${requested.version ?: "+"}")
+                // use own fork with patch for gradle api dependency
+                // remove if https://github.com/vojtechhabarta/typescript-generator/pull/478 is merged & released
+                useModule("com.github.bennofs.typescript-generator:typescript-generator-gradle-plugin:0e3cce7cddc3b57c953ebc799e6f8a7138807346")
             }
         }
     }
