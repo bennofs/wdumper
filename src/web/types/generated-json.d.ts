@@ -1,6 +1,6 @@
 /* tslint:disable */
 /* eslint-disable */
-// Generated using typescript-generator version 2.19.577 on 2020-02-17 17:02:31.
+// Generated using typescript-generator version 2.22-SNAPSHOT on 2020-04-22 16:40:03.
 
 interface DumpRequest {
     meta: DumpRequestMeta;
@@ -13,15 +13,16 @@ interface ZenodoRequest {
 }
 
 interface DumpSpecJson {
+    meta: boolean;
     statements: StatementFilterJson[];
     languages: string[];
     entities: EntityFilterJson[];
-    sitelinks: boolean;
     samplingPercent: number;
-    labels: boolean;
-    meta: boolean;
+    sitelinks: boolean;
     seed: number;
+    labels: boolean;
     descriptions: boolean;
+    version: DumpSpecVersion;
     aliases: boolean;
 }
 
@@ -32,16 +33,16 @@ interface DumpRequestMeta {
 
 interface StatementFilterJson {
     simple: boolean;
-    references: boolean;
-    full: boolean;
     rank: RankFilter;
     qualifiers: boolean;
+    references: boolean;
     properties: string[];
+    full: boolean;
 }
 
 interface EntityFilterJson {
-    type: EntityTypeFilter;
     properties: PropertyRestrictionJson[];
+    type: EntityTypeFilter;
 }
 
 interface PropertyRestrictionJson {
@@ -52,6 +53,8 @@ interface PropertyRestrictionJson {
 }
 
 type ZenodoTarget = "SANDBOX" | "RELEASE";
+
+type DumpSpecVersion = "1";
 
 type RankFilter = "best-rank" | "non-deprecated" | "all";
 
