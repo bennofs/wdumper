@@ -8,6 +8,7 @@ import org.jooq.impl.DSL;
 
 import javax.sql.DataSource;
 import java.sql.Timestamp;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -49,8 +50,8 @@ public class Database {
 
             // define a window: only assign dumps if all dumps are older than ageTop, or at least one dump is older
             // than ageBottom
-            final Field<Timestamp> ageTop = DSL.timestampSub(DSL.currentTimestamp(), Config.RECENT_MIN_MINUTES, DatePart.MINUTE);
-            final Field<Timestamp> ageBottom = DSL.timestampSub(DSL.currentTimestamp(), Config.RECENT_MAX_MINUTES, DatePart.MINUTE);
+            final Field<LocalDateTime> ageTop = DSL.localDateTimeSub(DSL.currentLocalDateTime(), Config.RECENT_MIN_MINUTES, DatePart.MINUTE);
+            final Field<LocalDateTime> ageBottom = DSL.localDateTimeSub(DSL.currentLocalDateTime(), Config.RECENT_MAX_MINUTES, DatePart.MINUTE);
             final Condition debounceCond = DSL.or(
                     DSL.max(DUMP.CREATED_AT).lt(ageTop),
                     DSL.min(DUMP.CREATED_AT).lt(ageBottom)
@@ -82,21 +83,21 @@ public class Database {
 
     public void startRun(int runId) {
         context().update(RUN)
-                .set(RUN.STARTED_AT, DSL.currentTimestamp())
+                .set(RUN.STARTED_AT, DSL.currentLocalDateTime())
                 .where(RUN.ID.eq(runId))
                 .execute();
     }
 
     public void finishRun(int runId) {
         context().update(RUN)
-                .set(RUN.FINISHED_AT, DSL.currentTimestamp())
+                .set(RUN.FINISHED_AT, DSL.currentLocalDateTime())
                 .where(RUN.ID.eq(runId))
                 .execute();
     }
 
     public void logDumpMessage(int runId, int dumpId, DumpStatusHandler.ErrorLevel level, String message) {
         context().insertInto(DUMP_ERROR)
-                .set(DUMP_ERROR.LOGGED_AT, DSL.currentTimestamp())
+                .set(DUMP_ERROR.LOGGED_AT, DSL.currentLocalDateTime())
                 .set(DUMP_ERROR.RUN_ID, runId)
                 .set(DUMP_ERROR.DUMP_ID, dumpId)
                 .set(DUMP_ERROR.LEVEL, DumpErrorLevel.valueOf(level.toString()))
@@ -106,7 +107,7 @@ public class Database {
 
     public void logUploadMessage(int dumpId, int zenodoId, DumpStatusHandler.ErrorLevel level, String message) {
         context().insertInto(DUMP_ERROR)
-                .set(DUMP_ERROR.LOGGED_AT, DSL.currentTimestamp())
+                .set(DUMP_ERROR.LOGGED_AT, DSL.currentLocalDateTime())
                 .set(DUMP_ERROR.RUN_ID, DSL.val((Integer)null))
                 .set(DUMP_ERROR.DUMP_ID, dumpId)
                 .set(DUMP_ERROR.ZENODO_ID, zenodoId)
@@ -145,7 +146,7 @@ public class Database {
         return tasks.filter(task ->
                 // update started field, while checking that no one else has started this upload yet
                 context().update(ZENODO)
-                    .set(ZENODO.STARTED_AT, DSL.currentTimestamp())
+                    .set(ZENODO.STARTED_AT, DSL.currentLocalDateTime())
                     .where(ZENODO.ID.eq(task.id))
                     .and(ZENODO.STARTED_AT.isNull())
                     .execute() == 1
@@ -154,7 +155,7 @@ public class Database {
 
     public void setUploadFinished(int id) {
         context().update(ZENODO)
-                .set(ZENODO.COMPLETED_AT, DSL.currentTimestamp())
+                .set(ZENODO.COMPLETED_AT, DSL.currentLocalDateTime())
                 .where(ZENODO.ID.eq(id))
                 .execute();
     }
