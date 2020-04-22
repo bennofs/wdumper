@@ -1,19 +1,19 @@
 package io.github.bennofs.wdumper;
 
 import io.github.bennofs.wdumper.database.Database;
-import kong.unirest.ProgressMonitor;
+import io.github.bennofs.wdumper.ext.UploadProgressMonitor;
 
 import java.io.Closeable;
 import java.util.Timer;
 import java.util.TimerTask;
 
-class UploadProgressMonitor implements io.github.bennofs.wdumper.ext.UploadProgressMonitor, Closeable {
+class UploadProgressMonitorImpl implements UploadProgressMonitor, Closeable {
     private final Database db;
     private final int id;
     private long progress;
     private final Timer timer;
 
-    public UploadProgressMonitor(Database db, final int id) {
+    public UploadProgressMonitorImpl(Database db, final int id) {
         this.db = db;
         this.id = id;
         this.progress = 0;

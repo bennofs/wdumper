@@ -98,7 +98,7 @@ public class Uploader implements Runnable {
                     });
                 }
 
-                try (final UploadProgressMonitor progress = new UploadProgressMonitor(db, task.id)) {
+                try (final UploadProgressMonitorImpl progress = new UploadProgressMonitorImpl(db, task.id)) {
                     api.addFile(deposit, outputPath.getFileName().toString(), Files.newInputStream(outputPath), Files.size(outputPath), progress);
                 }
                 api.publishDeposit(deposit);
