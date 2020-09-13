@@ -66,7 +66,7 @@ export class StatementFilter {
                ]),
                this.defaultEl = el(".left", [
                    el("h3", "Default rule"),
-                   el("span.form-label", "This rule is applied if no other rules matches")
+                   el("span.form-label", "This rule is applied if no other rules match.")
                ]),
                el(".right", [
                    el("h3", "How to export"),
