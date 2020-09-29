@@ -3,6 +3,6 @@
         "strict": false,
         "esModuleInterop": true,
         "noImplicitThis": true,
-        "noImplicitReturns": true,
+        "noImplicitReturns": true
     }
 }

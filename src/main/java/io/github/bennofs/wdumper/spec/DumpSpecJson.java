@@ -1,5 +1,6 @@
 package io.github.bennofs.wdumper.spec;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
@@ -46,7 +47,8 @@ public abstract class DumpSpecJson {
      * @return The seed for the random number generate used for sampling.
      */
     @JsonProperty
-    public abstract long seed();
+    @JsonInclude(JsonInclude.Include.NON_ABSENT)
+    public abstract OptionalLong seed();
 
     /**
      * @return Filters to apply to statements of the entities which are included in the dump.

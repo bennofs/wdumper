@@ -2,14 +2,17 @@ package io.github.bennofs.wdumper;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.bennofs.wdumper.ext.ZstdDumpFile;
-import io.github.bennofs.wdumper.interfaces.DumpStatusHandler;
 import io.github.bennofs.wdumper.interfaces.RunnerStatusHandler;
 import io.github.bennofs.wdumper.spec.DumpSpec;
 import picocli.CommandLine;
 
+import javax.inject.Inject;
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.FileSystems;
 import java.nio.file.Path;
+import java.time.Duration;
+import java.time.temporal.ChronoUnit;
 
 /**
  * Provides a simple CLI interface to test the dump generation and generate single dumps from a spec.
@@ -23,18 +26,25 @@ public class Cli implements Runnable {
 
     @Override
     public void run() {
-        final DumpRunner runner = DumpRunner.create(1, new ZstdDumpFile(dumpFilePath.toString()), FileSystems.getDefault().getPath("."));
+        final DumpRunner.Config config = new DumpRunner.Config() {
+            @Override
+            public Path dumpStorageDirectory() {
+                return FileSystems.getDefault().getPath(".");
+            }
+
+            @Override
+            public Duration runProgressInterval() {
+                return Duration.of(10, ChronoUnit.SECONDS);
+            }
+        };
+
+        final DumpRunner runner = DumpRunner.create(1, config, new ZstdDumpFile(dumpFilePath.toString()));
 
         try {
             final ObjectMapper mapper = new ObjectMapper();
             final DumpSpec spec = mapper.readValue(this.specFilePath.toFile(), DumpSpec.class);
 
-            runner.addDumpTask(1, spec, new DumpStatusHandler() {
-                @Override
-                public void reportError(ErrorLevel level, String message) {
-                    System.err.println("[" + level.toString() + "] " + message);
-                }
-            });
+            runner.addDumpTask(1, spec, (level, message) -> System.err.println("[" + level.toString() + "] " + message));
         } catch(IOException e) {
             e.printStackTrace();
             System.exit(1);

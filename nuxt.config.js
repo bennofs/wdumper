@@ -53,6 +53,8 @@ export default {
     ** You can extend webpack config here
     */
     extend (config, ctx) {
+	    /*const BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPlugin;
+	    config.plugins.push(new BundleAnalyzerPlugin());*/
     },
 
     postcss: {

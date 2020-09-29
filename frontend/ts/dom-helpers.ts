@@ -20,7 +20,7 @@ const {buildRadioGroup} = new class {
                 "value": value,
                 "id": radioName + "-" + value,
             });
-        };
+        }
 
         const node = el("li.radio-group", Object.keys(choices).map(value => {
             const label = choices[value];

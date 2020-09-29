@@ -8,8 +8,8 @@ import org.apache.commons.lang3.Validate;
  * @see <a href="https://developers.zenodo.org/#errors">Zenodo API documentation: errors</a>
  */
 public class ZenodoApiException extends Exception {
-    private String responseBody;
-    private int responseCode;
+    private final String responseBody;
+    private final int responseCode;
 
     /**
      * Constructs a new ZenodoApiException.

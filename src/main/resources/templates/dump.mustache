@@ -1,0 +1,181 @@
+<h2>Dump #{{id}}: {{title}}</h2>
+
+<p>
+    {{description}}
+</p>
+
+<div class="intro">
+    {{#linkDownload}}
+        <p>
+            <a href="{{.}}" class="link-button">
+                <img src="{{resources.img/icons/download}}" alt="">
+                download
+            </a>
+        </p>
+    {{/linkDownload}}
+
+    {{#isQueued}}
+        <p>
+            queued since {{since}}
+        </p>
+    {{/isQueued}}
+
+    {{#processing}}
+        <p>
+            processing for {{startedAt.since}}
+            <span class="progress">
+            <span class="progress-bar" style="width: {{completedPercent}}%;"></span>
+        </span> remaining: ~{{estimatedRemaining.until}}
+        </p>
+    {{/processing}}
+</div>
+
+
+{{#run}}
+    <p>
+    <h2>Info</h2>
+    <table>
+        <tr>
+            <td>Statement count</td>
+            <td>{{statementCount}}</td>
+        </tr>
+        <tr>
+            <td>Entity count</td>
+            <td>{{entityCount}}</td>
+        </tr>
+        <tr>
+            <td>Triple count</td>
+            <td>{{tripleCount}}</td>
+        </tr>
+        <tr>
+            <td>Source dump date</td>
+            <td>{{dumpDate}}</td>
+        </tr>
+
+        {{#toolVersionDetails}}
+        <tr>
+            <td>Tool version</td>
+            <td><a href="{{releaseLink}}">{{releaseName}}</a></td>
+        </tr>
+        {{/toolVersionDetails}}
+
+        {{#wdtkVersionDetails}}
+        <tr>
+            <td>Wikidata-Toolkit version</td>
+            <td><a href="{{releaseLink}}">{{releaseName}}</a></td>
+        </tr>
+        {{/wdtkVersionDetails}}
+    </table>
+{{/run}}
+
+{{#hasErrors}}
+    <div class="section">
+        <h2>Errors</h2>
+        <table>
+            <tr>
+                <th>category</th>
+                <th>level</th>
+                <th>timestamp</th>
+                <th>message</th>
+            </tr>
+
+            {{#errors}}
+                <tr>
+                    <td>{{category}}</td>
+                    <td>{{level.levelName}}</td>
+                    <td>{{loggedAt.instant}}</td>
+                    <td><code>{{message}}</code></td>
+                </tr>
+            {{/errors}}
+        </table>
+    </div>
+{{/hasErrors}}
+
+<div class="section">
+    <h2>Zenodo</h2>
+    <table>
+        <tr>
+            <td>Sandbox</td>
+            <td>
+                {{#zenodoSandboxStatus}}
+                    {{#completedAt}}
+                        <a href="{{link}}">{{doi}}</a>
+                    {{/completedAt}}
+
+                    {{#uploading}}
+                        upload in progress  <span class="progress"><span class="progress-bar" style="width: {{completedPercent}}%;"></span></span>
+                    {{/uploading}}
+
+                    {{#waitingForDump}}
+                        upload will start after dump has finished
+                    {{/waitingForDump}}
+                {{/zenodoSandboxStatus}}
+
+                {{^zenodoSandboxStatus}}
+                    <button class="upload" data-target="sandbox" data-dump-id="{{id}}">Upload to Sandbox</button>
+                {{/zenodoSandboxStatus}}
+            </td>
+        </tr>
+        <tr>
+            <td>Main</td>
+            <td>
+                {{#zenodoReleaseStatus}}
+                    {{#completedAt}}
+                        <a href="{{link}}">{{doi}}</a>
+                    {{/completedAt}}
+
+                    {{#uploading}}
+                        upload in progress: <span class="progress"><span class="progress-bar" style="width: {{completedPercent}}%;"></span></span>
+                    {{/uploading}}
+
+                    {{#waitingForDump}}
+                        upload will start after dump has finished
+                    {{/waitingForDump}}
+                {{/zenodoReleaseStatus}}
+
+                {{^zenodoReleaseStatus}}
+                    <button class="upload" data-target="sandbox" data-dump-id="{{id}}">Upload to Release</button>
+                {{/zenodoReleaseStatus}}
+            </td>
+        </tr>
+    </table>
+</div>
+
+<div class="section">
+    <h2>Timings</h2>
+    <table>
+        <tr>
+            <td>Created at</td>
+            <td>{{ createdAt.instant }} </td>
+        </tr>
+        {{#run}}
+            <tr>
+                <td>Processing started at</td>
+                <td>
+                    {{#startedAt}}{{instant}}{{/startedAt}}
+                    {{^startedAt}}not yet started{{/startedAt}}
+                </td>
+            </tr>
+            <tr>
+                <td>Processing finished at</td>
+                <td>
+                    {{#finishedAt}}{{instant}}{{/finishedAt}}
+                    {{^finishedAt}}not yet finished{{/finishedAt}}
+                </td>
+            </tr>
+            <tr>
+                <td>Processed items</td>
+                <td>{{ count }} </td>
+            </tr>
+        {{/run}}
+    </table>
+</div>
+
+<div class="section">
+    <h2>Spec</h2>
+    <p>
+        <code>
+            <pre>{{specPretty}}</pre>
+        </code>
+    </p>
+</div>

@@ -13,6 +13,7 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 import java.util.zip.GZIPInputStream;
@@ -21,25 +22,35 @@ import java.util.zip.GZIPInputStream;
  * This class handles the upload of finished dumps to zenodo.
  */
 public class Uploader implements Runnable {
+    private final Config config;
+
     private final Database db;
     private final ZenodoApi zenodo;
     private final ZenodoApi zenodoSandbox;
-    private final Path outputDirectory;
     private final Object runCompletedEvent;
     private final ObjectMapper mapper;
 
-    public Uploader(Database db, ZenodoApi zenodo, ZenodoApi zenodoSandbox, Path outputDirectory, Object runCompletedEvent) {
+    /**
+     * For documentation, see the implementation at {@link io.github.bennofs.wdumper.Config}.
+     */
+    public interface Config {
+        Path dumpStorageDirectory();
+        Duration uploadInterval();
+        int previewSize();
+    }
+
+    public Uploader(Config config, Database db, ZenodoApi zenodo, ZenodoApi zenodoSandbox, Object runCompletedEvent) {
+        this.config = config;
         this.mapper = new ObjectMapper();
         this.db = db;
         this.zenodo = zenodo;
         this.zenodoSandbox = zenodoSandbox;
-        this.outputDirectory = outputDirectory;
         this.runCompletedEvent = runCompletedEvent;
     }
 
-    static String generatePreview(Path dumpPath) throws IOException {
+    static String generatePreview(Config config, Path dumpPath) throws IOException {
         try (final InputStream in = new GZIPInputStream(Files.newInputStream(dumpPath))) {
-            final byte[] buffer = new byte[Config.PREVIEW_SIZE];
+            final byte[] buffer = new byte[config.previewSize()];
             int end = 0;
             while (end != buffer.length) {
                 int r = in.read(buffer, end, buffer.length - end);
@@ -63,7 +74,7 @@ public class Uploader implements Runnable {
 
             // if there are no tasks, wait for either a run to complete or the check interval timeout to expire
             if (tasks.isEmpty()) {
-                this.runCompletedEvent.wait(Config.UPLOAD_INTERVAL_MILLIS);
+                this.runCompletedEvent.wait(config.uploadInterval().toMillis());
                 return;
             }
         }
@@ -74,7 +85,7 @@ public class Uploader implements Runnable {
                 System.err.println("starting upload: " + task.toString());
 
                 final ZenodoApi api = task.target.equals("RELEASE") ? this.zenodo : this.zenodoSandbox;
-                final Path outputPath = DumpRunner.getOutputPath(outputDirectory, task.dump_id);
+                final Path outputPath = DumpRunner.getOutputPath(config.dumpStorageDirectory(), task.dump_id);
 
                 final Deposit deposit = api.getDeposit(task.deposit_id);
                 final Deposit.DepositFile[] files = api.getFiles(deposit);
@@ -87,7 +98,7 @@ public class Uploader implements Runnable {
 
                 // upload short preview in plain text, uncompressed
                 if (Arrays.stream(files).noneMatch(file -> file.filename.equals("preview.nt"))) {
-                    final String preview = generatePreview(outputPath);
+                    final String preview = generatePreview(config, outputPath);
                     api.addFile(deposit, "preview.nt", preview, (bytesWritten, totalBytes) -> {
                     });
                 }

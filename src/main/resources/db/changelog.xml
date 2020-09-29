@@ -1,5 +1,9 @@
 <?xml version="1.1" encoding="UTF-8" standalone="no"?>
-<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog" xmlns:ext="http://www.liquibase.org/xml/ns/dbchangelog-ext" xmlns:pro="http://www.liquibase.org/xml/ns/pro" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog-ext http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-ext.xsd http://www.liquibase.org/xml/ns/pro http://www.liquibase.org/xml/ns/pro/liquibase-pro-3.8.xsd http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:ext="http://www.liquibase.org/xml/ns/dbchangelog-ext"
+                   xmlns:pro="http://www.liquibase.org/xml/ns/pro" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog-ext http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-ext.xsd http://www.liquibase.org/xml/ns/pro http://www.liquibase.org/xml/ns/pro/liquibase-pro-3.8.xsd http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd"
+                   objectQuotingStrategy="QUOTE_ALL_OBJECTS">
 
     <changeSet author="bennofs (generated)" id="1580052151820-2">
         <createTable tableName="dump">
@@ -123,28 +127,205 @@
     </changeSet>
 
     <changeSet author="bennofs (generated)" id="1580052151820-12">
-        <addForeignKeyConstraint baseColumnNames="dump_id" baseTableName="dump_error" constraintName="fk_dump_error_dump_id_dump" deferrable="false" initiallyDeferred="false" onDelete="RESTRICT" onUpdate="RESTRICT" referencedColumnNames="id" referencedTableName="dump" validate="true"/>
+        <addForeignKeyConstraint baseColumnNames="dump_id" baseTableName="dump_error"
+                                 constraintName="fk_dump_error_dump_id_dump" deferrable="false"
+                                 initiallyDeferred="false" onDelete="RESTRICT" onUpdate="RESTRICT"
+                                 referencedColumnNames="id" referencedTableName="dump" validate="true"/>
     </changeSet>
 
     <changeSet author="bennofs (generated)" id="1580052151820-13">
-        <addForeignKeyConstraint baseColumnNames="run_id" baseTableName="dump_error" constraintName="fk_dump_error_run_id_run" deferrable="false" initiallyDeferred="false" onDelete="RESTRICT" onUpdate="RESTRICT" referencedColumnNames="id" referencedTableName="run" validate="true"/>
+        <addForeignKeyConstraint baseColumnNames="run_id" baseTableName="dump_error"
+                                 constraintName="fk_dump_error_run_id_run" deferrable="false" initiallyDeferred="false"
+                                 onDelete="RESTRICT" onUpdate="RESTRICT" referencedColumnNames="id"
+                                 referencedTableName="run" validate="true"/>
     </changeSet>
 
     <changeSet author="bennofs (generated)" id="1580052151820-14">
-        <addForeignKeyConstraint baseColumnNames="zenodo_id" baseTableName="dump_error" constraintName="fk_dump_error_zenodo_id_zenodo" deferrable="false" initiallyDeferred="false" onDelete="RESTRICT" onUpdate="RESTRICT" referencedColumnNames="id" referencedTableName="zenodo" validate="true"/>
+        <addForeignKeyConstraint baseColumnNames="zenodo_id" baseTableName="dump_error"
+                                 constraintName="fk_dump_error_zenodo_id_zenodo" deferrable="false"
+                                 initiallyDeferred="false" onDelete="RESTRICT" onUpdate="RESTRICT"
+                                 referencedColumnNames="id" referencedTableName="zenodo" validate="true"/>
     </changeSet>
 
     <changeSet author="bennofs (generated)" id="1580052151820-15">
-        <addForeignKeyConstraint baseColumnNames="run_id" baseTableName="dump" constraintName="fk_dump_run_id_run" deferrable="false" initiallyDeferred="false" onDelete="RESTRICT" onUpdate="RESTRICT" referencedColumnNames="id" referencedTableName="run" validate="true"/>
+        <addForeignKeyConstraint baseColumnNames="run_id" baseTableName="dump" constraintName="fk_dump_run_id_run"
+                                 deferrable="false" initiallyDeferred="false" onDelete="RESTRICT" onUpdate="RESTRICT"
+                                 referencedColumnNames="id" referencedTableName="run" validate="true"/>
     </changeSet>
 
     <changeSet author="bennofs (generated)" id="1580052151820-16">
-        <addForeignKeyConstraint baseColumnNames="dump_id" baseTableName="zenodo" constraintName="fk_zenodo_dump_id_dump" deferrable="false" initiallyDeferred="false" onDelete="RESTRICT" onUpdate="RESTRICT" referencedColumnNames="id" referencedTableName="dump" validate="true"/>
+        <addForeignKeyConstraint baseColumnNames="dump_id" baseTableName="zenodo"
+                                 constraintName="fk_zenodo_dump_id_dump" deferrable="false" initiallyDeferred="false"
+                                 onDelete="RESTRICT" onUpdate="RESTRICT" referencedColumnNames="id"
+                                 referencedTableName="dump" validate="true"/>
     </changeSet>
 
     <changeSet id="change-stats-type" author="bennofs">
-        <modifyDataType tableName="dump" columnName="entity_count" newDataType="BIGINT"/>
-        <modifyDataType tableName="dump" columnName="statement_count" newDataType="BIGINT"/>
-        <modifyDataType tableName="dump" columnName="triple_count" newDataType="BIGINT"/>
+        <sql>
+            ALTER TABLE `dump`
+            MODIFY COLUMN entity_count BIGINT NOT NULL DEFAULT 0,
+            MODIFY COLUMN statement_count BIGINT NOT NULL DEFAULT 0,
+            MODIFY COLUMN triple_count BIGINT NOT NULL DEFAULT 0
+        </sql>
+    </changeSet>
+
+    <changeSet id="test-data" author="bennofs" context="test">
+        <insert tableName="run">
+            <column name="id" value="1"/>
+            <column name="started_at" valueComputed="from_unixtime(1591457000)"/>
+            <column name="finished_at" valueComputed="from_unixtime(1591457500)"/>
+            <column name="count" value="60000000"/>
+            <column name="dump_date" value="20200601"/>
+            <column name="tool_version" value="14dbd55d36082327e101adfc077b9cb72dfb8863"/>
+            <column name="wdtk_version" value="0afe49fef56a6da58a8f8fd3f023a56920c04f3b"/>
+        </insert>
+
+        <insert tableName="dump">
+            <column name="id" value="1"/>
+            <column name="title" value="test1"/>
+            <column name="spec"
+                    value="{&quot;sitelinks&quot;:false,&quot;version&quot;:&quot;1&quot;,&quot;aliases&quot;:false,&quot;entities&quot;:[{&quot;type&quot;:&quot;item&quot;,&quot;id&quot;:2,&quot;properties&quot;:[{&quot;type&quot;:&quot;anyvalue&quot;,&quot;rank&quot;:&quot;non-deprecated&quot;,&quot;property&quot;:&quot;P698&quot;,&quot;id&quot;:1},{&quot;type&quot;:&quot;anyvalue&quot;,&quot;rank&quot;:&quot;non-deprecated&quot;,&quot;property&quot;:&quot;P932&quot;,&quot;id&quot;:3}]}],&quot;statements&quot;:[{&quot;id&quot;:0,&quot;references&quot;:false,&quot;simple&quot;:false,&quot;rank&quot;:&quot;all&quot;,&quot;full&quot;:false,&quot;qualifiers&quot;:false},{&quot;id&quot;:4,&quot;references&quot;:false,&quot;simple&quot;:true,&quot;properties&quot;:[],&quot;rank&quot;:&quot;all&quot;,&quot;full&quot;:false,&quot;qualifiers&quot;:false},{&quot;id&quot;:5,&quot;references&quot;:false,&quot;simple&quot;:true,&quot;properties&quot;:[],&quot;rank&quot;:&quot;all&quot;,&quot;full&quot;:false,&quot;qualifiers&quot;:false}],&quot;labels&quot;:false,&quot;meta&quot;:true,&quot;descriptions&quot;:false}"/>
+            <column name="description" value="test dump with full associated data"/>
+            <column name="created_at" valueComputed="from_unixtime(1591456900)"/>
+            <column name="triple_count" value="123891"/>
+            <column name="entity_count" value="312"/>
+            <column name="statement_count" value="2313"/>
+            <column name="compressed_size" value="999"/>
+            <column name="run_id" value="1"/>
+        </insert>
+
+        <insert tableName="zenodo">
+            <column name="id" value="1"/>
+            <column name="deposit_id" value="12389"/>
+            <column name="dump_id" value="1"/>
+            <column name="doi" value="10.5281/zenodo.3333333"/>
+            <column name="target" value="SANDBOX"/>
+            <column name="created_at" valueComputed="from_unixtime(1591457200)"/>
+            <column name="started_at" valueComputed="from_unixtime(1591457800)"/>
+            <column name="completed_at" valueComputed="from_unixtime(1591457900)"/>
+            <column name="uploaded_bytes" value="999"/>
+        </insert>
+
+        <insert tableName="zenodo">
+            <column name="id" value="2"/>
+            <column name="deposit_id" value="12390"/>
+            <column name="dump_id" value="1"/>
+            <column name="doi" value="10.5281/zenodo.1111111"/>
+            <column name="target" value="RELEASE"/>
+            <column name="created_at" valueComputed="from_unixtime(1591458200)"/>
+            <column name="started_at" valueComputed="from_unixtime(1591458800)"/>
+            <column name="uploaded_bytes" value="333"/>
+        </insert>
+
+        <insert tableName="dump_error">
+            <column name="id" value="1"/>
+            <column name="logged_at" valueComputed="from_unixtime(1591457100)"/>
+            <column name="dump_id" value="1"/>
+            <column name="run_id" value="1"/>
+            <column name="level" value="WARNING"/>
+            <column name="message" value="test dump warning"/>
+        </insert>
+
+        <insert tableName="dump_error">
+            <column name="id" value="2"/>
+            <column name="logged_at" valueComputed="from_unixtime(1591457900)"/>
+            <column name="dump_id" value="1"/>
+            <column name="zenodo_id" value="1"/>
+            <column name="level" value="WARNING"/>
+            <column name="message" value="test zenodo warning sandbox"/>
+        </insert>
+
+
+        <insert tableName="dump_error">
+            <column name="id" value="3"/>
+            <column name="logged_at" valueComputed="from_unixtime(1591458300)"/>
+            <column name="dump_id" value="1"/>
+            <column name="zenodo_id" value="2"/>
+            <column name="level" value="CRITICAL"/>
+            <column name="message" value="test zenodo critical release"/>
+        </insert>
+
+        <insert tableName="dump_error">
+            <column name="id" value="4"/>
+            <column name="logged_at" valueComputed="from_unixtime(1591457200)"/>
+            <column name="run_id" value="1"/>
+            <column name="level" value="ERROR"/>
+            <column name="message" value="test run error"/>
+        </insert>
+
+        <insert tableName="dump">
+            <column name="id" value="3"/>
+            <column name="title" value="test3"/>
+            <column name="spec"
+                    value="{&quot;sitelinks&quot;:false,&quot;version&quot;:&quot;1&quot;,&quot;aliases&quot;:false,&quot;entities&quot;:[{&quot;type&quot;:&quot;item&quot;,&quot;id&quot;:2,&quot;properties&quot;:[{&quot;type&quot;:&quot;anyvalue&quot;,&quot;rank&quot;:&quot;non-deprecated&quot;,&quot;property&quot;:&quot;P698&quot;,&quot;id&quot;:1},{&quot;type&quot;:&quot;anyvalue&quot;,&quot;rank&quot;:&quot;non-deprecated&quot;,&quot;property&quot;:&quot;P932&quot;,&quot;id&quot;:3}]}],&quot;statements&quot;:[{&quot;id&quot;:0,&quot;references&quot;:false,&quot;simple&quot;:false,&quot;rank&quot;:&quot;all&quot;,&quot;full&quot;:false,&quot;qualifiers&quot;:false},{&quot;id&quot;:4,&quot;references&quot;:false,&quot;simple&quot;:true,&quot;properties&quot;:[],&quot;rank&quot;:&quot;all&quot;,&quot;full&quot;:false,&quot;qualifiers&quot;:false},{&quot;id&quot;:5,&quot;references&quot;:false,&quot;simple&quot;:true,&quot;properties&quot;:[],&quot;rank&quot;:&quot;all&quot;,&quot;full&quot;:false,&quot;qualifiers&quot;:false}],&quot;labels&quot;:false,&quot;meta&quot;:true,&quot;descriptions&quot;:false}"/>
+            <column name="description" value="test dump (created, but no run, with zenodo request)"/>
+            <column name="created_at" valueComputed="from_unixtime(1591459000)"/>
+        </insert>
+
+        <insert tableName="zenodo">
+            <column name="id" value="3"/>
+            <column name="deposit_id" value="42"/>
+            <column name="dump_id" value="3"/>
+            <column name="doi" value="10.5281/zenodo.4444444"/>
+            <column name="target" value="SANDBOX"/>
+            <column name="created_at" valueComputed="from_unixtime(1591459200)"/>
+        </insert>
+
+        <insert tableName="run">
+            <column name="id" value="2"/>
+            <column name="started_at" valueComputed="from_unixtime(1591461000)"/>
+            <column name="count" value="20000000"/>
+            <column name="dump_date" value="20200608"/>
+            <column name="tool_version" value="14dbd55d36082327e101adfc077b9cb72dfb8863"/>
+            <column name="wdtk_version" value="0afe49fef56a6da58a8f8fd3f023a56920c04f3b"/>
+        </insert>
+
+        <insert tableName="dump">
+            <column name="id" value="4"/>
+            <column name="title" value="test4"/>
+            <column name="spec"
+                    value="{&quot;sitelinks&quot;:false,&quot;version&quot;:&quot;1&quot;,&quot;aliases&quot;:false,&quot;entities&quot;:[{&quot;type&quot;:&quot;item&quot;,&quot;id&quot;:2,&quot;properties&quot;:[{&quot;type&quot;:&quot;anyvalue&quot;,&quot;rank&quot;:&quot;non-deprecated&quot;,&quot;property&quot;:&quot;P698&quot;,&quot;id&quot;:1},{&quot;type&quot;:&quot;anyvalue&quot;,&quot;rank&quot;:&quot;non-deprecated&quot;,&quot;property&quot;:&quot;P932&quot;,&quot;id&quot;:3}]}],&quot;statements&quot;:[{&quot;id&quot;:0,&quot;references&quot;:false,&quot;simple&quot;:false,&quot;rank&quot;:&quot;all&quot;,&quot;full&quot;:false,&quot;qualifiers&quot;:false},{&quot;id&quot;:4,&quot;references&quot;:false,&quot;simple&quot;:true,&quot;properties&quot;:[],&quot;rank&quot;:&quot;all&quot;,&quot;full&quot;:false,&quot;qualifiers&quot;:false},{&quot;id&quot;:5,&quot;references&quot;:false,&quot;simple&quot;:true,&quot;properties&quot;:[],&quot;rank&quot;:&quot;all&quot;,&quot;full&quot;:false,&quot;qualifiers&quot;:false}],&quot;labels&quot;:false,&quot;meta&quot;:true,&quot;descriptions&quot;:false}"/>
+            <column name="description" value="test dump (in-progress)"/>
+            <column name="created_at" valueComputed="from_unixtime(1591460000)"/>
+            <column name="triple_count" value="0"/>
+            <column name="entity_count" value="0"/>
+            <column name="statement_count" value="0"/>
+            <column name="compressed_size" value="10"/>
+            <column name="run_id" value="2"/>
+        </insert>
+
+        <insert tableName="dump">
+            <column name="id" value="5"/>
+            <column name="title" value="test5"/>
+            <column name="spec"
+                    value="{&quot;sitelinks&quot;:false,&quot;version&quot;:&quot;1&quot;,&quot;aliases&quot;:false,&quot;entities&quot;:[{&quot;type&quot;:&quot;item&quot;,&quot;id&quot;:2,&quot;properties&quot;:[{&quot;type&quot;:&quot;anyvalue&quot;,&quot;rank&quot;:&quot;non-deprecated&quot;,&quot;property&quot;:&quot;P698&quot;,&quot;id&quot;:1},{&quot;type&quot;:&quot;anyvalue&quot;,&quot;rank&quot;:&quot;non-deprecated&quot;,&quot;property&quot;:&quot;P932&quot;,&quot;id&quot;:3}]}],&quot;statements&quot;:[{&quot;id&quot;:0,&quot;references&quot;:false,&quot;simple&quot;:false,&quot;rank&quot;:&quot;all&quot;,&quot;full&quot;:false,&quot;qualifiers&quot;:false},{&quot;id&quot;:4,&quot;references&quot;:false,&quot;simple&quot;:true,&quot;properties&quot;:[],&quot;rank&quot;:&quot;all&quot;,&quot;full&quot;:false,&quot;qualifiers&quot;:false},{&quot;id&quot;:5,&quot;references&quot;:false,&quot;simple&quot;:true,&quot;properties&quot;:[],&quot;rank&quot;:&quot;all&quot;,&quot;full&quot;:false,&quot;qualifiers&quot;:false}],&quot;labels&quot;:false,&quot;meta&quot;:true,&quot;descriptions&quot;:false}"/>
+            <column name="description" value="test dump (in-progress)"/>
+            <column name="created_at" valueComputed="from_unixtime(1591460300)"/>
+            <column name="triple_count" value="5000000000"/>
+            <column name="entity_count" value="5000000"/>
+            <column name="statement_count" value="9000000"/>
+            <column name="compressed_size" value="1000000000"/>
+            <column name="run_id" value="2"/>
+        </insert>
+
+        <!-- a run that hasn't started yet -->
+        <insert tableName="run">
+            <column name="id" value="3"/>
+            <column name="count" value="0"/>
+            <column name="dump_date" value="20200608"/>
+            <column name="tool_version" value="14dbd55d36082327e101adfc077b9cb72dfb8863"/>
+            <column name="wdtk_version" value="0afe49fef56a6da58a8f8fd3f023a56920c04f3b"/>
+        </insert>
+    </changeSet>
+
+    <changeSet id="integrity-single-zenodo" author="bennofs">
+        <addUniqueConstraint tableName="zenodo" columnNames="dump_id,target" />
+    </changeSet>
+
+    <changeSet id="compressed-size-long" author="bennofs">
+        <sql>
+            ALTER TABLE `dump`
+            MODIFY COLUMN compressed_size BIGINT NOT NULL DEFAULT 0
+        </sql>
     </changeSet>
 </databaseChangeLog>

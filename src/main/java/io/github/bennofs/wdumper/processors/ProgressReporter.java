@@ -1,16 +1,21 @@
 package io.github.bennofs.wdumper.processors;
 
-import io.github.bennofs.wdumper.interfaces.DumpStatusHandler;
 import io.github.bennofs.wdumper.interfaces.RunnerStatusHandler;
-import org.wikidata.wdtk.datamodel.interfaces.*;
+import org.wikidata.wdtk.datamodel.interfaces.EntityDocumentDumpProcessor;
+import org.wikidata.wdtk.datamodel.interfaces.ItemDocument;
+import org.wikidata.wdtk.datamodel.interfaces.LexemeDocument;
+import org.wikidata.wdtk.datamodel.interfaces.PropertyDocument;
+
+import java.time.Duration;
+import java.util.concurrent.TimeUnit;
 
 public class ProgressReporter implements EntityDocumentDumpProcessor {
     private int count = 0;
-    private final int delay;
+    private final Duration delay;
     private final RunnerStatusHandler runnerStatusHandler;
     private Thread thread;
 
-    public ProgressReporter(int delay, RunnerStatusHandler runnerStatusHandler) {
+    public ProgressReporter(Duration delay, RunnerStatusHandler runnerStatusHandler) {
         this.delay = delay;
         this.runnerStatusHandler = runnerStatusHandler;
     }
@@ -32,18 +37,15 @@ public class ProgressReporter implements EntityDocumentDumpProcessor {
 
     @Override
     public void open() {
-        thread = new Thread(new Runnable() {
-            @Override
-            public void run() {
-                while (!Thread.currentThread().isInterrupted()) {
-                    try {
-                        Thread.sleep(ProgressReporter.this.delay * 1000);
-                    } catch(InterruptedException e) {
-                        break;
-                    }
-
-                    runnerStatusHandler.reportProgress(count);
+        thread = new Thread(() -> {
+            while (!Thread.currentThread().isInterrupted()) {
+                try {
+                    TimeUnit.MILLISECONDS.sleep(ProgressReporter.this.delay.toMillis());
+                } catch(InterruptedException e) {
+                    break;
                 }
+
+                runnerStatusHandler.reportProgress(count);
             }
         });
         thread.start();

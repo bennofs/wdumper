@@ -1,0 +1,32 @@
+<h2>Recent dumps</h2>
+
+<table>
+  <tr>
+    <td>Title</td>
+    <td>Created at</td>
+    <td>Finished</td>
+    <td>Download link</td>
+  </tr>
+  {{#dumps}}
+    <tr>
+      <td><a href="{{link}}">{{title}}</a></td>
+      <td>{{createdAt.instant}}</td>
+      <td>
+        {{#finishedAt}}
+          at {{instant}}
+        {{/finishedAt}}
+        {{^finishedAt}}
+          not finished
+        {{/finishedAt}}
+      </td>
+      <td>
+        {{#linkDownload}}
+          <a href="{{.}}">Download</a>
+        {{/linkDownload}}
+      </td>
+    </tr>
+  {{/dumps}}
+</table>
+
+{{#prevUrl}}<a class="prev" href="{{.}}">Prev</a>{{/prevUrl}}
+{{#nextUrl}}<a class="next" href="{{.}}">Next</a>{{/nextUrl}}

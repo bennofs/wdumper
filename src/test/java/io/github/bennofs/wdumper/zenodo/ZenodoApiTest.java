@@ -1,16 +1,28 @@
 package io.github.bennofs.wdumper.zenodo;
 
 import io.github.bennofs.wdumper.Integration;
+import org.apache.http.HttpHost;
+import org.apache.http.conn.HttpClientConnectionManager;
+import org.apache.http.conn.routing.HttpRoutePlanner;
+import org.apache.http.conn.ssl.NoopHostnameVerifier;
+import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
+import org.apache.http.conn.ssl.TrustAllStrategy;
+import org.apache.http.conn.ssl.TrustSelfSignedStrategy;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.conn.BasicHttpClientConnectionManager;
+import org.apache.http.impl.conn.DefaultProxyRoutePlanner;
+import org.apache.http.ssl.SSLContextBuilder;
 import org.junit.jupiter.api.*;
 
+import javax.net.ssl.SSLContext;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.security.KeyManagementException;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
+import java.security.cert.CertificateException;
 import java.util.Collections;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -24,11 +36,11 @@ class ZenodoApiTest {
     private Deposit deposit;
 
     @BeforeAll
-    private void createApi() throws KeyStoreException, NoSuchAlgorithmException, KeyManagementException {
+    private void createApi() {
         // this integration test requires a zenodo sandbox api token
         final String token = System.getenv("ZENODO_SANDBOX_TOKEN");
+
         final CloseableHttpClient client = HttpClientBuilder.create()
-                .setConnectionManager(new BasicHttpClientConnectionManager())
                 .build();
 
         this.api = new ZenodoApi(client, ZenodoApi.SANDBOX_URI, token);

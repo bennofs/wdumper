@@ -79,7 +79,7 @@ public class ValueFilter implements SnakVisitor<Boolean> {
             @Override
             public Boolean visit(UnsupportedValue value) { return false;  }
         });
-    };
+    }
 
     @Override
     public Boolean visit(SomeValueSnak snak) {

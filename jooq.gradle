@@ -1,5 +1,5 @@
 jooq {
-    version = "3.13.1"
+    version = "3.13.2"
     liquibase(sourceSets.main) {
         generator {
             database {
@@ -9,6 +9,11 @@ jooq {
                         key = "scripts"
                         value = project.ext.changeLogFile
                     }
+
+                    property {
+                        key = "changeLogParameters.contexts"
+                        value = "!test"
+                    }
                 }
             }
             generate {
@@ -17,6 +22,18 @@ jooq {
             target {
                 packageName = "io.github.bennofs.wdumper.jooq"
                 directory = "${project.buildDir}/generated/sources/jooq"
+            }
+            strategy {
+                name = null
+                matchers {
+                    tables {
+                        table {
+                            tableClass {
+                                expression = 'T_$0'
+                            }
+                        }
+                    }
+                }
             }
         }
 

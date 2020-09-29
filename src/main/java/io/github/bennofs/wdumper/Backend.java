@@ -11,20 +11,18 @@ import io.github.bennofs.wdumper.interfaces.RunnerStatusHandler;
 import io.github.bennofs.wdumper.processors.FilteredRdfSerializer;
 import io.github.bennofs.wdumper.spec.DumpSpec;
 import io.github.bennofs.wdumper.zenodo.ZenodoApi;
-import org.apache.http.client.HttpClient;
 import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.wikidata.wdtk.dumpfiles.MwDumpFile;
 import picocli.CommandLine;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.net.URI;
 import java.nio.file.Path;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 
 /**
  * The main class for the backend application.
@@ -40,12 +38,14 @@ public class Backend implements Runnable, Closeable {
     @CommandLine.Option(names = {"-h", "--help"}, usageHelp = true, description = "display this help message")
     boolean usageHelpRequested;
 
+    private final Config config;
     private final Database db;
     private final ZenodoApi zenodo;
     private final ZenodoApi zenodoSandbox;
     final Object runCompletedEvent;
 
-    private Backend(Database db, ZenodoApi zenodo, ZenodoApi zenodoSandbox) {
+    private Backend(Config config, Database db, ZenodoApi zenodo, ZenodoApi zenodoSandbox) {
+        this.config = config;
         this.db = db;
         this.zenodo = zenodo;
         this.zenodoSandbox = zenodoSandbox;
@@ -70,7 +70,7 @@ public class Backend implements Runnable, Closeable {
     }
 
     private DumpRunner createRunner(int runId, List<DumpTask> tasks, MwDumpFile dumpFile) {
-        final DumpRunner runner = DumpRunner.create(runId, dumpFile, outputDirectory);
+        final DumpRunner runner = DumpRunner.create(runId, config, dumpFile);
 
         final ObjectMapper mapper = new ObjectMapper();
         for (DumpTask task : tasks) {
@@ -92,8 +92,8 @@ public class Backend implements Runnable, Closeable {
         final Optional<RunTask> maybeRunTask = db.createRun(dumpFile.getDateStamp());
 
         // no new tasks
-        if (!maybeRunTask.isPresent()) {
-            Thread.sleep(Config.DUMP_INTERVAL_MILLIS);
+        if (maybeRunTask.isEmpty()) {
+            TimeUnit.MILLISECONDS.sleep(config.dumpInterval().toMillis());
             return;
         }
         final RunTask runTask = maybeRunTask.get();
@@ -127,7 +127,7 @@ public class Backend implements Runnable, Closeable {
     @Override
     public void run() {
         final Uploader uploader =
-                new Uploader(db, this.zenodo, this.zenodoSandbox, outputDirectory, runCompletedEvent);
+                new Uploader(config, db, this.zenodo, this.zenodoSandbox, runCompletedEvent);
         final Thread uploadThread = new Thread(uploader);
         uploadThread.start();
 
@@ -144,27 +144,35 @@ public class Backend implements Runnable, Closeable {
         }
     }
 
-    private static Backend create(final String dbUri, final String zenodoToken, final String zenodoSandboxToken) throws SQLException {
+    private static Backend create(Config config) throws SQLException {
         final MysqlDataSource dataSource = new MysqlDataSource();
-        dataSource.setURL(dbUri);
+        dataSource.setURL(config.databaseAddress().toString());
         dataSource.setServerTimezone("UTC");
 
         final CloseableHttpClient http = HttpClientBuilder.create().build();
-        final ZenodoApi zenodo = new ZenodoApi(http, ZenodoApi.MAIN_URI, zenodoToken);
-        final ZenodoApi zenodoSandbox = new ZenodoApi(http, ZenodoApi.SANDBOX_URI, zenodoSandboxToken);
+        final Optional<ZenodoApi> zenodo = config.zenodoReleaseToken().map(token ->
+                new ZenodoApi(http, ZenodoApi.MAIN_URI, token));
+        final Optional<ZenodoApi> zenodoSandbox = config.zenodoSandboxToken().map(token ->
+                new ZenodoApi(http, ZenodoApi.SANDBOX_URI, token));
+        final BuildConfig buildConfig = BuildConfig.retrieve();
 
-        return new Backend(new Database(dataSource), zenodo, zenodoSandbox);
+        if (zenodo.isEmpty()) {
+            throw new RuntimeException("backend requires a token for release zenodo instance");
+        }
+
+        if (zenodoSandbox.isEmpty()) {
+            throw new RuntimeException("backend requires a token for sandbox zenodo instance");
+        }
+
+        return new Backend(config, new Database(config, buildConfig, dataSource), zenodo.get(), zenodoSandbox.get());
     }
 
 
     public static void main(String[] args) {
-        System.err.println("Backend version " + Config.TOOL_VERSION + " with WDTK version " + Config.WDTK_VERSION);
+        final BuildConfig buildConfig = BuildConfig.retrieve();
+        System.err.println("Backend version " + buildConfig.toolVersion() + " with WDTK version " + buildConfig.wdtkVersion());
 
-        final String dbUri = Config.constructDBUri();
-        final String zenodoToken = System.getenv("ZENODO_TOKEN");
-        final String zenodoSandboxToken = System.getenv("ZENODO_SANDBOX_TOKEN");
-
-        try (Backend app = Backend.create(dbUri, zenodoToken, zenodoSandboxToken)) {
+        try (Backend app = Backend.create(new ConfigEnv())) {
             new CommandLine(app).execute(args);
         } catch(SQLException e) {
             System.err.println("initialization failed: " + e.toString());

@@ -19,7 +19,7 @@ public class DumpSpec {
     @JsonProperty
     final private Set<StatementFilter> statements;
     final private HashMap<String, StatementOptions> statementOptions;
-    private StatementOptions statementOptionsDefault;
+    private final StatementOptions statementOptionsDefault;
     @JsonProperty
     final private Set<String> languages;
 

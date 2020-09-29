@@ -1,6 +1,6 @@
 package io.github.bennofs.wdumper.zenodo;
 
-import io.github.bennofs.wdumper.jooq.enums.ZenodoTarget;
+import io.github.bennofs.wdumper.model.Zenodo;
 import org.apache.http.impl.client.CloseableHttpClient;
 
 import javax.annotation.Nullable;
@@ -18,7 +18,7 @@ public class ZenodoApiProviderImpl implements ZenodoApiProvider {
     }
 
     @Override
-    public @Nullable ZenodoApi getZenodoApiFor(ZenodoTarget target) {
+    public @Nullable ZenodoApi getZenodoApiFor(Zenodo.Target target) {
         Objects.requireNonNull(target);
         switch(target) {
             case SANDBOX: {

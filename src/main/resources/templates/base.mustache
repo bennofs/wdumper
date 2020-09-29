@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head>
+    {{#isDevelopment}}
+        <script src="http://localhost:35729/livereload.js"></script>
+    {{/isDevelopment}}
+    {{#resources}}
+        <link rel="stylesheet" href="{{css/minireset}}">
+        <link rel="stylesheet" href="{{css/main}}">
+
+        <script defer type="text/javascript">
+            const ICONS_URL = '{{url/icons}}';
+            const API_URL = '{{url/api}}';
+            const ROOT = '{{url/root}}';
+        </script>
+        <script defer src="{{js/langcodes}}"></script>
+        <script defer src="{{js/main}}"></script>
+        <title>WDumper</title>
+    {{/resources}}
+</head>
+
+<body>
+<div class="bar">
+    <header>
+        <a href="{{#path}}{{/path}}"><h1>WDumper</h1></a>
+        <p>A tool to create custom wikidata RDF dumps</p>
+        <div class="end">
+            <a href="{{#path}}about{{/path}}">About</a>
+            <a href="{{#path}}dumps{{/path}}">Recent dumps</a>
+        </div>
+    </header>
+</div>
+
+<main id="main" data-view="{{view}}">
+    {{&content}}
+</main>
+</body>
+</html>

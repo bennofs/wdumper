@@ -36,8 +36,8 @@ public class FilteredRdfSerializer implements EntityDocumentDumpProcessor {
     private final RankBuffer rankBuffer = new RankBuffer();
     private int count = 0;
 
-    private AtomicLong includedStatements = new AtomicLong();
-    private AtomicLong includedEntities = new AtomicLong();
+    private final AtomicLong includedStatements = new AtomicLong();
+    private final AtomicLong includedEntities = new AtomicLong();
 
     private final DumpStatusHandler statusHandler;
     private final OutputStream outputStream;

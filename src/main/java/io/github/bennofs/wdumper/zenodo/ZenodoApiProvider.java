@@ -1,7 +1,6 @@
 package io.github.bennofs.wdumper.zenodo;
 
-import io.github.bennofs.wdumper.jooq.enums.ZenodoTarget;
-import io.github.bennofs.wdumper.zenodo.ZenodoApi;
+import io.github.bennofs.wdumper.model.Zenodo;
 
 import javax.annotation.Nullable;
 
@@ -17,5 +16,5 @@ public interface ZenodoApiProvider {
      *         (for example, this can happen if no API key was configured for that target)
      */
     @Nullable
-    ZenodoApi getZenodoApiFor(ZenodoTarget target);
+    ZenodoApi getZenodoApiFor(Zenodo.Target target);
 }

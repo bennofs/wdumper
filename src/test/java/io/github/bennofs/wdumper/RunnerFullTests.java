@@ -23,6 +23,8 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.time.Duration;
+import java.time.temporal.ChronoUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -51,7 +53,17 @@ public class RunnerFullTests {
     @BeforeEach
     void initRunner() {
         final MwLocalDumpFile dump = new ZstdDumpFile("data/slice.json.zst");
-        runner = DumpRunner.create(1, dump, tempDir);
+        runner = DumpRunner.create(1, new DumpRunner.Config() {
+            @Override
+            public Path dumpStorageDirectory() {
+                return tempDir;
+            }
+
+            @Override
+            public Duration runProgressInterval() {
+                return Duration.of(1, ChronoUnit.SECONDS);
+            }
+        }, dump);
     }
 
     private static InputStream openFileStream(Path path) throws IOException {

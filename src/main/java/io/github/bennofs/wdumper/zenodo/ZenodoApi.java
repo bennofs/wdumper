@@ -23,6 +23,7 @@ import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 
 import static org.apache.http.entity.ContentType.APPLICATION_JSON;
 
@@ -44,6 +45,10 @@ public class ZenodoApi {
     public static final URI MAIN_URI = URI.create("https://zenodo.org/api/");
 
     public ZenodoApi(CloseableHttpClient http, URI baseUri, String token) {
+        Objects.requireNonNull(token);
+        Objects.requireNonNull(baseUri);
+        Objects.requireNonNull(http);
+
         this.baseUri = baseUri;
         this.http = http;
         this.token = token;

@@ -64,7 +64,7 @@ class DumpCreator {
             statements: Object.values(this.model.statements),
         };
 
-        fetch(ROOT + "create", {
+        fetch(API_URL + "dumps", {
             method: "POST",
             body: JSON.stringify({
                 spec: data,
@@ -72,7 +72,7 @@ class DumpCreator {
             }),
             headers: { "Content-Type": "application/json" }
         }).then(r => r.json()).then(r => {
-            window.location = r.url;
+            window.location = r["view-url"];
         })
     }
 }

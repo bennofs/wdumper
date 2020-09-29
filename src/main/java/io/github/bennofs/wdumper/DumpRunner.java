@@ -17,6 +17,7 @@ import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -24,15 +25,22 @@ import java.util.stream.Stream;
 
 public class DumpRunner {
     private final int id;
+    private final Config config;
     private final DumpProcessingController controller;
     private final MwDumpFile dumpFile;
     private final PropertyRegister propertyRegister;
 
     private final List<FilteredRdfSerializer> serializers;
 
-    private final Path outputDirectory;
+    /**
+     * For documentation see implementation of the interface {@link io.github.bennofs.wdumper.Config}
+     */
+    public interface Config {
+        Path dumpStorageDirectory();
+        Duration runProgressInterval();
+    }
 
-    private DumpRunner(final int id, final MwDumpFile dumpFile, DumpProcessingController controller, PropertyRegister propertyRegister, Path outputDirectory) {
+    private DumpRunner(final int id, final Config config, final MwDumpFile dumpFile, DumpProcessingController controller, PropertyRegister propertyRegister) {
         Objects.requireNonNull(dumpFile);
         Objects.requireNonNull(controller);
         Objects.requireNonNull(propertyRegister);
@@ -41,17 +49,16 @@ public class DumpRunner {
         this.dumpFile = dumpFile;
         this.controller = controller;
         this.propertyRegister = propertyRegister;
+        this.config = config;
 
         this.serializers = new ArrayList<>();
-
-        this.outputDirectory = outputDirectory;
     }
 
-    static public DumpRunner create(final int id, final MwDumpFile dumpFile, Path outputDirectory) {
+    static public DumpRunner create(final int id, final Config config, final MwDumpFile dumpFile) {
         final DumpProcessingController controller = new DumpProcessingController("wikidatawiki");
         final PropertyRegister propertyRegister = PropertyRegister.getWikidataPropertyRegister();
 
-        return new DumpRunner(id, dumpFile, controller, propertyRegister, outputDirectory);
+        return new DumpRunner(id, config, dumpFile, controller, propertyRegister);
     }
 
     public static Path getOutputPath(Path outputDirectory, final int id) {
@@ -59,14 +66,14 @@ public class DumpRunner {
     }
 
     void addDumpTask(int id, DumpSpec spec, DumpStatusHandler statusHandler) throws IOException {
-        final OutputStream output = openGzipOutput(getOutputPath(this.outputDirectory, id));
+        final OutputStream output = openGzipOutput(getOutputPath(this.config.dumpStorageDirectory(), id));
 
         FilteredRdfSerializer serializer = new FilteredRdfSerializer(spec, id, output, controller.getSitesInformation(), propertyRegister, statusHandler);
         this.serializers.add(serializer);
     }
 
     public void run(RunnerStatusHandler runnerStatusHandler) {
-        final EntityDocumentDumpProcessor progressProcessor = new ProgressReporter(Config.PROGRESS_INTERVAL, runnerStatusHandler);
+        final EntityDocumentDumpProcessor progressProcessor = new ProgressReporter(config.runProgressInterval(), runnerStatusHandler);
 
         Stream.concat(serializers.stream(), Stream.of(progressProcessor)).forEach(processor -> {
             processor.open();
@@ -141,20 +148,17 @@ public class DumpRunner {
         final int SIZE = 1024 * 1024 * 10;
         final PipedOutputStream pos = new PipedOutputStream();
         final PipedInputStream pis = new PipedInputStream(pos, SIZE);
-        final Thread worker = new Thread(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    byte[] bytes = new byte[SIZE];
-                    for (int len; (len = pis.read(bytes)) > 0; ) {
-                        outputStream.write(bytes, 0, len);
-                    }
-                } catch (IOException ioException) {
-                    ioException.printStackTrace();
-                } finally {
-                    close(pis);
-                    close(outputStream);
+        final Thread worker = new Thread(() -> {
+            try {
+                byte[] bytes = new byte[SIZE];
+                for (int len; (len = pis.read(bytes)) > 0; ) {
+                    outputStream.write(bytes, 0, len);
                 }
+            } catch (IOException ioException) {
+                ioException.printStackTrace();
+            } finally {
+                close(pis);
+                close(outputStream);
             }
         }, "async-output-stream");
         worker.start();

@@ -39,6 +39,7 @@ export interface DumpSpec {
     statements: { [id:number]: StatementFilter };
     samplingPercent?: number;
     languages?: string[];
+    seed?: number;
 
     labels: boolean;
     descriptions: boolean;
