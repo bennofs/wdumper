@@ -1,6 +1,9 @@
 package io.github.bennofs.wdumper;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
 import com.mysql.cj.jdbc.MysqlDataSource;
 import io.github.bennofs.wdumper.database.Database;
 import io.github.bennofs.wdumper.database.DumpTask;
@@ -73,6 +76,10 @@ public class Backend implements Runnable, Closeable {
         final DumpRunner runner = DumpRunner.create(runId, config, dumpFile);
 
         final ObjectMapper mapper = new ObjectMapper();
+        mapper.registerModule(new JavaTimeModule());
+        mapper.registerModule(new Jdk8Module());
+        mapper.registerModule(new ParameterNamesModule());
+
         for (DumpTask task : tasks) {
             try {
                 runner.addDumpTask(task.id, mapper.readValue(task.spec, DumpSpec.class), (level, message) -> db.logDumpMessage(runId, task.id, level, message));

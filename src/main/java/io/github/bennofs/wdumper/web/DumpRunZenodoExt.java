@@ -2,6 +2,9 @@ package io.github.bennofs.wdumper.web;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
 import io.github.bennofs.wdumper.model.DumpRunZenodo;
 import io.github.bennofs.wdumper.model.Progress;
 
@@ -112,6 +115,11 @@ public class DumpRunZenodoExt {
     }
 
     final static ObjectMapper MAPPER = new ObjectMapper();
+    static {
+        MAPPER.registerModule(new Jdk8Module());
+        MAPPER.registerModule(new JavaTimeModule());
+        MAPPER.registerModule(new ParameterNamesModule());
+    }
     public String specPretty() {
         try {
             final JsonNode node = MAPPER.readTree(this.dumpRunZenodo.dump.spec());

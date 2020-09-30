@@ -1,6 +1,9 @@
 package io.github.bennofs.wdumper;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
 import io.github.bennofs.wdumper.database.Database;
 import io.github.bennofs.wdumper.database.DumpInfo;
 import io.github.bennofs.wdumper.database.ZenodoTask;
@@ -42,6 +45,10 @@ public class Uploader implements Runnable {
     public Uploader(Config config, Database db, ZenodoApi zenodo, ZenodoApi zenodoSandbox, Object runCompletedEvent) {
         this.config = config;
         this.mapper = new ObjectMapper();
+        this.mapper.registerModule(new JavaTimeModule());
+        this.mapper.registerModule(new Jdk8Module());
+        this.mapper.registerModule(new ParameterNamesModule());
+
         this.db = db;
         this.zenodo = zenodo;
         this.zenodoSandbox = zenodoSandbox;

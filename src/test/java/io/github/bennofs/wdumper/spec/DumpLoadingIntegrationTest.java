@@ -1,6 +1,9 @@
 package io.github.bennofs.wdumper.spec;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
 import io.github.bennofs.wdumper.Integration;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -34,6 +37,9 @@ public class DumpLoadingIntegrationTest {
     @Test
     public void testParseRoundtrip() throws IOException {
         final ObjectMapper mapper = new ObjectMapper();
+        mapper.registerModule(new Jdk8Module());
+        mapper.registerModule(new JavaTimeModule());
+        mapper.registerModule(new ParameterNamesModule());
 
         for (Map.Entry<String, byte[]> entry : specs.entrySet()) {
             final DumpSpecJson spec;

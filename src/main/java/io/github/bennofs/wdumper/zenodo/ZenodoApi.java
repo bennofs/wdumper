@@ -5,6 +5,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.PropertyNamingStrategy;
+import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
 import com.google.common.collect.Lists;
 import io.github.bennofs.wdumper.ext.FixedSizeHttpEntityWithProgress;
 import io.github.bennofs.wdumper.ext.UploadProgressMonitor;
@@ -39,6 +42,9 @@ public class ZenodoApi {
     static {
         MAPPER = new ObjectMapper();
         MAPPER.setPropertyNamingStrategy(PropertyNamingStrategy.SNAKE_CASE);
+        MAPPER.registerModule(new Jdk8Module());
+        MAPPER.registerModule(new JavaTimeModule());
+        MAPPER.registerModule(new ParameterNamesModule());
     }
 
     public static final URI SANDBOX_URI = URI.create("https://sandbox.zenodo.org/api/");
