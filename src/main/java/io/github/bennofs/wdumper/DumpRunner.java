@@ -33,7 +33,7 @@ public class DumpRunner {
     private final List<FilteredRdfSerializer> serializers;
 
     /**
-     * For documentation see implementation of the interface {@link io.github.bennofs.wdumper.Config}
+     * For documentation see implementation at {@link io.github.bennofs.wdumper.Config}
      */
     public interface Config {
         Path dumpStorageDirectory();
@@ -82,9 +82,8 @@ public class DumpRunner {
 
         runnerStatusHandler.start();
         controller.processDump(this.dumpFile);
-        runnerStatusHandler.done();
-
         Stream.concat(serializers.stream(), Stream.of(progressProcessor)).forEach(EntityDocumentDumpProcessor::close);
+        runnerStatusHandler.done();
     }
 
     public List<FilteredRdfSerializer> getSerializers() {
@@ -167,9 +166,9 @@ public class DumpRunner {
 
     /**
      * Closes a Closeable and swallows any exceptions that might occur in the
-     * process.
+     * process
      *
-     * @param closeable
+     * @param closeable The object to close
      */
     static void close(Closeable closeable) {
         if (closeable != null) {
