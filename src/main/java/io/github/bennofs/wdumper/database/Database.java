@@ -12,6 +12,7 @@ import io.github.bennofs.wdumper.jooq.tables.records.DB_ZenodoRecord;
 import io.github.bennofs.wdumper.model.*;
 import org.apache.commons.lang3.Range;
 import org.jooq.*;
+import org.jooq.Record;
 import org.jooq.impl.DSL;
 
 import javax.annotation.Nullable;

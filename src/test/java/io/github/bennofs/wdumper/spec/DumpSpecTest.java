@@ -16,7 +16,7 @@ import java.util.Set;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class DumpSpecTest {
-    private static final ObjectMapper createObjectMapper() {
+    private static ObjectMapper createObjectMapper() {
         final ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.registerModule(new Jdk8Module());
         objectMapper.registerModule(new JavaTimeModule());
@@ -68,8 +68,6 @@ public class DumpSpecTest {
         final InputStream stream = getClass().getResourceAsStream("/simple-spec.json");
         final ObjectNode origNode = mapper.readValue(stream, ObjectNode.class);
 
-        assertThrows(IllegalArgumentException.class, () ->
-                mapper.convertValue(origNode.deepCopy().without("seed"), DumpSpecJson.class));
         assertThrows(IllegalArgumentException.class, () ->
                 mapper.convertValue(origNode.deepCopy().without("aliases"), DumpSpecJson.class));
         assertThrows(IllegalArgumentException.class, () ->
