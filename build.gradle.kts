@@ -180,7 +180,6 @@ tasks.processResources.configure {
     dependsOn(buildFrontendJs)
 
     from("frontend/static") { into("static/") }
-    from(buildSass) { into("static/") }
 
     doLast {
         destinationDir.resolve(".ratpack").writeText("")
