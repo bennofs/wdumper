@@ -175,11 +175,6 @@ val buildFrontendJs by tasks.registering(YarnTask::class) {
     dependsOn(tasks["yarn"])
 }
 
-val buildSass by tasks.registering(SassCompile::class) {
-    source = fileTree("src/main/resources/scss")
-    destinationDir.set(project.buildDir.resolve("sass"))
-}
-
 tasks.processResources.configure {
     dependsOn(buildFrontendCss)
     dependsOn(buildFrontendJs)
