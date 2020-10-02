@@ -164,6 +164,7 @@ val buildFrontendCss by tasks.registering(YarnTask::class) {
     outputs.file("frontend/static/main.css")
 
     args = listOf("frontend-less")
+    dependsOn(tasks["yarn"])
 }
 
 val buildFrontendJs by tasks.registering(YarnTask::class) {
@@ -171,6 +172,7 @@ val buildFrontendJs by tasks.registering(YarnTask::class) {
     outputs.file("frontend/static/main.js")
 
     args = listOf("frontend-rollup")
+    dependsOn(tasks["yarn"])
 }
 
 val buildSass by tasks.registering(SassCompile::class) {
