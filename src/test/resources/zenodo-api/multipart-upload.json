@@ -1,0 +1,27 @@
+{
+  "updated": "2020-10-05T19:39:05.155796+00:00",
+  "last_part_size": 5534336,
+  "links": {
+    "self": "https://sandbox.zenodo.org/api/files/28fd69ac-7903-4ef9-88ef-f11d0c9943cc/test-data?uploadId=e5f855a5-ba1c-438d-8f82-251fae45c395",
+    "object": "https://sandbox.zenodo.org/api/files/28fd69ac-7903-4ef9-88ef-f11d0c9943cc/test-data",
+    "bucket": "https://sandbox.zenodo.org/api/files/28fd69ac-7903-4ef9-88ef-f11d0c9943cc"
+  },
+  "created": "2020-10-05T19:11:29.507705+00:00",
+  "part_size": 6000000,
+  "completed": false,
+  "bucket": "28fd69ac-7903-4ef9-88ef-f11d0c9943cc",
+  "parts": [
+    {
+      "updated": "2020-10-05T19:45:08.972649+00:00",
+      "created": "2020-10-05T19:39:05.159963+00:00",
+      "checksum": "md5:2794699a710a75aa01d8cb0232dd0a90",
+      "part_number": 0,
+      "end_byte": 6000000,
+      "start_byte": 0
+    }
+  ],
+  "key": "test-data",
+  "last_part_number": 1,
+  "id": "e5f855a5-ba1c-438d-8f82-251fae45c395",
+  "size": 11534336
+}

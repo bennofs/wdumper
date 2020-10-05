@@ -16,6 +16,7 @@ import org.apache.http.HttpRequest;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.methods.*;
+import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 
@@ -23,6 +24,8 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.List;
@@ -38,14 +41,17 @@ public class ZenodoApi {
     private final ObjectReader objectReader;
     private final ObjectWriter objectWriter;
 
-    static final ObjectMapper MAPPER;
-    static {
-        MAPPER = new ObjectMapper();
-        MAPPER.setPropertyNamingStrategy(PropertyNamingStrategy.SNAKE_CASE);
-        MAPPER.registerModule(new Jdk8Module());
-        MAPPER.registerModule(new JavaTimeModule());
-        MAPPER.registerModule(new ParameterNamesModule());
+    static final ObjectMapper MAPPER = createObjectMapper();
+
+    static ObjectMapper createObjectMapper() {
+        ObjectMapper mapper = new ObjectMapper();
+        mapper.setPropertyNamingStrategy(PropertyNamingStrategy.SNAKE_CASE);
+        mapper.registerModule(new Jdk8Module());
+        mapper.registerModule(new JavaTimeModule());
+        mapper.registerModule(new ParameterNamesModule());
+        return mapper;
     }
+
 
     public static final URI SANDBOX_URI = URI.create("https://sandbox.zenodo.org/api/");
     public static final URI MAIN_URI = URI.create("https://zenodo.org/api/");
@@ -272,7 +278,7 @@ public class ZenodoApi {
         final HttpPut request = new HttpPut(deposit.links.bucket + "/" + filename);
         configureRequest(request);
         request.setHeader("Content-Type", "application/octet-stream");
-        request.setEntity(new FixedSizeHttpEntityWithProgress(source, size, progress));
+        request.setEntity(new FixedSizeHttpEntityWithProgress(source, size, FixedSizeHttpEntityWithProgress.SizeMode.EXACT, progress));
 
         try {
             try (CloseableHttpResponse response = http.execute(request)) {
@@ -282,4 +288,76 @@ public class ZenodoApi {
             throw httpException(e);
         }
     }
+
+
+    /**
+     * Begins a new multipart upload.
+     *
+     * Use the functions {@link #addFilePart(MultipartUpload, long, InputStream, long, UploadProgressMonitor)} and {@link #finishMultipartUpload(MultipartUpload)}
+     * with the returned object to upload the parts and then finish the multipart upload.
+     *
+     * Each call to this function will initiate a new multipart upload,
+     * not sharing any parts with previous multipart uploads for the same file.
+     */
+    public MultipartUpload startMultipart(Deposit deposit, String filename, long size, long partSize) throws IOException, ZenodoApiException {
+        final URI multipartUri;
+        try {
+            multipartUri = new URIBuilder(deposit.links.bucket + "/" + URLEncoder.encode(filename, StandardCharsets.UTF_8))
+                    .addParameter("uploads", "")
+                    .addParameter("size", Long.toString(size))
+                    .addParameter("partSize", Long.toString(partSize))
+                    .build();
+        } catch (URISyntaxException e) {
+            e.printStackTrace();
+            throw new IllegalStateException("internal error, uri not valid", e);
+        }
+        return postJson(multipartUri.toASCIIString(), Collections.emptyMap(), MultipartUpload.class);
+    }
+
+    /**
+     * Upload a single part in a multipart upload.
+     *
+     * It is safe to call this function in parallel for different parts of the same multipart upload,
+     * in order to use multiple connections to upload a single file.
+     *
+     * @param multipart The multipart upload to add this part to
+     * @param part Number of the part that is uploaded
+     * @param source InputStream for the contents to be uploaded
+     * @param size Size of the part in bytes (exactly this number of bytes will be read from source).
+     *             This must match the part size specified when creating the multipart upload,
+     *             except if this is the last part.
+     * @param progress Handler for upload progress
+     */
+    public void addFilePart(MultipartUpload multipart, long part, InputStream source, long size, UploadProgressMonitor progress) throws IOException, ZenodoApiException {
+        final URI partUri;
+        try {
+            partUri = new URIBuilder(multipart.links.self)
+                    .addParameter("partNumber", Long.toString(part))
+                    .build();
+        } catch (URISyntaxException e) {
+            e.printStackTrace();
+            throw new IllegalStateException("internal error, uri not valid", e);
+        }
+        final HttpPut request = new HttpPut(partUri);
+        configureRequest(request);
+        request.setHeader("Content-Type", "application/octet-stream");
+        request.setEntity(new FixedSizeHttpEntityWithProgress(source, size, FixedSizeHttpEntityWithProgress.SizeMode.TRUNCATE, progress));
+
+        try {
+            try (CloseableHttpResponse response = http.execute(request)) {
+                checkResponse(response);
+            }
+        } catch(ClientProtocolException e) {
+            throw httpException(e);
+        }
+    }
+
+    /**
+     * Finish a multipart upload. This function only succeeds if all parts have been uploaded.
+     */
+    void finishMultipartUpload(MultipartUpload upload) throws IOException, ZenodoApiException {
+        httpPost(upload.links.self.toASCIIString());
+    }
+
+
 }

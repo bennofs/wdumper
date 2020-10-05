@@ -1,9 +1,7 @@
 package io.github.bennofs.wdumper.ext;
 
-import org.apache.commons.io.output.ProxyOutputStream;
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
-import org.apache.http.entity.HttpEntityWrapper;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -20,13 +18,20 @@ public class FixedSizeHttpEntityWithProgress implements HttpEntity {
     private long written = 0;
     private final long size;
     private final InputStream source;
+    private final SizeMode sizeMode;
     private final UploadProgressMonitor monitor;
+
+    public enum SizeMode {
+        EXACT,
+        TRUNCATE
+    }
 
     protected static final int OUTPUT_BUFFER_SIZE = 1<<16;
 
-    public FixedSizeHttpEntityWithProgress(InputStream source, long size, UploadProgressMonitor monitor) {
+    public FixedSizeHttpEntityWithProgress(InputStream source, long size, SizeMode sizeMode, UploadProgressMonitor monitor) {
         this.source = source;
         this.size = size;
+        this.sizeMode = sizeMode;
         this.monitor = monitor;
     }
 
@@ -56,7 +61,7 @@ public class FixedSizeHttpEntityWithProgress implements HttpEntity {
     }
 
     @Override
-    public InputStream getContent() throws IOException {
+    public InputStream getContent() {
         // we don't support getContent, since we want to track how many bytes have been written
         // this method is not needed, internally writeTo is used
         // see https://stackoverflow.com/a/28276489/2494803
@@ -69,9 +74,13 @@ public class FixedSizeHttpEntityWithProgress implements HttpEntity {
 
         try {
             final byte[] buffer = new byte[OUTPUT_BUFFER_SIZE];
-            while (true) {
+            while (this.written <= size || sizeMode == SizeMode.EXACT) {
                 int readCount = source.read(buffer);
                 if (readCount == -1) break;
+
+                if (sizeMode == SizeMode.TRUNCATE && this.written + readCount > this.size) {
+                    readCount = (int)(this.size - this.written);
+                }
 
                 outStream.write(buffer, 0, readCount);
                 this.written += readCount;
@@ -82,7 +91,7 @@ public class FixedSizeHttpEntityWithProgress implements HttpEntity {
         }
 
         if (this.written != size) {
-            throw new IllegalStateException(String.format(
+            throw new IOException(String.format(
                     "number of written bytes (%d) does not equal input source size (%d)",
                     this.written,
                     this.size
@@ -97,6 +106,6 @@ public class FixedSizeHttpEntityWithProgress implements HttpEntity {
 
     @Override
     @Deprecated
-    public void consumeContent() throws IOException {
+    public void consumeContent() {
     }
 }

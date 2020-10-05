@@ -24,6 +24,7 @@ import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateException;
 import java.util.Collections;
+import java.util.Objects;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -74,7 +75,7 @@ class ZenodoApiTest {
 
         assertEquals(deposit.id, get.id);
         assertEquals("Test title", deposit.metadata.title());
-        assertArrayEquals(new Creator[] {c}, deposit.metadata.creators().toArray());
+        assertArrayEquals(new Creator[] {c}, Objects.requireNonNull(deposit.metadata.creators()).toArray());
     }
 
     @Test
@@ -87,13 +88,8 @@ class ZenodoApiTest {
         assertEquals("test", files[0].filename);
     }
 
-    @Test
-    @Order(4)
-    void testAddFileLargeStream() throws IOException, ZenodoApiException {
-        // generate some data to upload
-        // we use a large amount of data (> 2GB) since there were issues at that threshold before
-        final long size = (1L<<30) / 2 * 5; // ~ 2.5 GB
-        final InputStream source = new InputStream() {
+    private static InputStream fakeData(final long size) {
+        return new InputStream() {
             private long remaining = size;
 
             @Override
@@ -105,6 +101,36 @@ class ZenodoApiTest {
                 return (int)(remaining & 0xFF);
             }
         };
+    }
+
+
+    @Test
+    @Order(4)
+    void testMultipartUpload() throws IOException, ZenodoApiException {
+        final long chunkSize = 6000000;
+        final long lastSize = 4000000;
+        final long size = chunkSize + lastSize; // two chunks
+        final MultipartUpload multipart = api.startMultipart(deposit, "multipart", size, chunkSize);
+        api.addFilePart(multipart, 0, fakeData(chunkSize), chunkSize, (done, total) -> {});
+
+        // test that it only reads the given amount of data from the source, even if the source has more data available
+        api.addFilePart(multipart, 1, fakeData(chunkSize), lastSize, (done, total) -> {});
+
+        api.finishMultipartUpload(multipart);
+
+        // there should be two files (the ones uploaded in the previous test and this one)
+        final Deposit.DepositFile[] files = api.getFiles(deposit);
+        assertEquals(2, files.length);
+        assertEquals("multipart", files[0].filename); // sorted alphabetically
+    }
+
+    @Test
+    @Order(5)
+    void testAddFileLargeStream() throws IOException, ZenodoApiException {
+        // generate some data to upload
+        // we use a large amount of data (> 2GB) since there were issues at that threshold before
+        final long size = (1L<<30) / 2 * 5; // ~ 2.5 GB
+        final InputStream source = fakeData(size);
 
         // perform upload
         final int[] progressCount = { 0 };
@@ -117,14 +143,14 @@ class ZenodoApiTest {
         assertTrue(progressCount[0] > 0, "progress handler was called at least once");
         assertEquals(0, remaining[0]);
 
-        // there should be two files (the one uploaded in the previous test and this one)
+        // there should be three files (the ones uploaded in the previous tests and this one)
         final Deposit.DepositFile[] files = api.getFiles(deposit);
-        assertEquals(2, files.length);
+        assertEquals(3, files.length);
         assertEquals("foobar", files[0].filename); // sorted alphabetically
     }
 
     @Test
-    @Order(5)
+    @Order(6)
     void testDeleteGet() throws IOException, ZenodoApiException {
         api.deleteDeposit(deposit.id);
         try {

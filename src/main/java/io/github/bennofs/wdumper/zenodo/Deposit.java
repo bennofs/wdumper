@@ -4,6 +4,8 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.MoreObjects;
 
+import java.net.URI;
+
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class Deposit {
@@ -47,7 +49,7 @@ public class Deposit {
         public String files;
         public String publish;
         public String newversion;
-        public String bucket;
+        public URI bucket;
         public String self;
 
         @Override
@@ -58,7 +60,7 @@ public class Deposit {
                     .add("files", files)
                     .add("publish", publish)
                     .add("newversion", newversion)
-                    .add("bucket", bucket)
+                    .add("bucket", bucket.toASCIIString())
                     .add("self", self)
                     .toString();
         }
