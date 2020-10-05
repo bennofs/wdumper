@@ -26,8 +26,8 @@ public abstract class BuildConfig {
      */
     public static BuildConfig retrieve() {
         return BuildConfig.builder()
-                .toolVersion(readMetaFile("tool-version"))
-                .wdtkVersion(readMetaFile("wdtk-version"))
+                .toolVersion(readMetaFile("tool-version").strip())
+                .wdtkVersion(readMetaFile("wdtk-version").strip())
                 .build();
     }
 
