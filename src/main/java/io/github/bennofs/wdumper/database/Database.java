@@ -189,10 +189,10 @@ public class Database {
     }
 
     public String getDumpSpec(int id) {
-        return context().select(DUMP.SPEC).where(DUMP.ID.eq(id)).fetchOne().value1();
+        return context().select(DUMP.SPEC).from(DUMP).where(DUMP.ID.eq(id)).fetchOne().value1();
     }
 
-    public DumpInfo getDumpInfo(int id) {
+    public DumpInfo getDumpInfo(int  id) {
         return context().select(DUMP.ID, RUN.WDTK_VERSION, RUN.TOOL_VERSION, RUN.DUMP_DATE, DUMP.TRIPLE_COUNT, DUMP.ENTITY_COUNT, DUMP.STATEMENT_COUNT)
                 .from(DUMP).innerJoin(RUN).on(DUMP.RUN_ID.eq(RUN.ID))
                 .where(DUMP.ID.eq(id))

@@ -400,4 +400,10 @@ public class DatabaseTest {
         assertThat(partial).last().extracting(d -> d.dump.id()).isEqualTo(3);
         assertThat(partial).size().isEqualTo(2);
     }
+
+    @Test
+    void testGetDumpSpec() {
+        final String retrieved = db.getDumpSpec(DUMP_1.id());
+        assertEquals(DUMP_1.spec(), retrieved);
+    }
 }
