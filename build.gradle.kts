@@ -1,6 +1,6 @@
 import com.moowork.gradle.node.yarn.YarnTask
 import io.freefair.gradle.plugins.jsass.SassCompile
-import java.net.URI;
+import java.net.URI
 
 
 plugins {
@@ -157,6 +157,11 @@ application {
 node {
     download = false
 }
+
+tasks.named<com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar>("shadowJar") {
+    mergeServiceFiles()
+}
+
 
 // region Build tasks
 val buildFrontendCss by tasks.registering(YarnTask::class) {
