@@ -43,7 +43,7 @@ public class ConfigEnv implements Config {
             final String dbName = Objects.requireNonNullElse(System.getenv("DB_NAME"), "wdumper");
             final String dbUser = Objects.requireNonNullElse(System.getenv("DB_USER"), "root");
             final String dbPassword = Objects.requireNonNullElse(System.getenv("DB_PASSWORD"), "");
-            this.databaseAddress = URI.create("jdbc:mysql://" + dbHost + "/" + dbName + "?sslMode=DISABLED&user=" + dbUser + "&password=" + dbPassword);
+            this.databaseAddress = URI.create("jdbc:mysql://" + dbHost + "/" + dbName + "?sslMode=DISABLED&serverTimezone=UTC&user=" + dbUser + "&password=" + dbPassword);
         } else {
             this.databaseAddress = URI.create(addressFromEnv);
         }

@@ -5,6 +5,9 @@ import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
 import com.mysql.cj.jdbc.MysqlDataSource;
+import com.zaxxer.hikari.HikariConfig;
+import com.zaxxer.hikari.HikariDataSource;
+import com.zaxxer.hikari.pool.HikariPool;
 import io.github.bennofs.wdumper.database.Database;
 import io.github.bennofs.wdumper.database.DumpTask;
 import io.github.bennofs.wdumper.database.RunTask;
@@ -19,6 +22,7 @@ import org.apache.http.impl.client.HttpClientBuilder;
 import org.wikidata.wdtk.dumpfiles.MwDumpFile;
 import picocli.CommandLine;
 
+import javax.sql.DataSource;
 import java.io.Closeable;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -152,9 +156,9 @@ public class Backend implements Runnable, Closeable {
     }
 
     private static Backend create(Config config) throws SQLException {
-        final MysqlDataSource dataSource = new MysqlDataSource();
-        dataSource.setURL(config.databaseAddress().toString());
-        dataSource.setServerTimezone("UTC");
+        HikariConfig hikariConfig = new HikariConfig();
+        hikariConfig.setJdbcUrl(config.databaseAddress().toString());
+        final DataSource dataSource = new HikariDataSource(hikariConfig);
 
         final CloseableHttpClient http = HttpClientBuilder.create().build();
         final Optional<ZenodoApi> zenodo = config.zenodoReleaseToken().map(token ->
