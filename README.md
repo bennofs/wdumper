@@ -1,4 +1,4 @@
-# WDumper ![](https://github.com/bennofs/wdumper/workflows/Java%20CI/badge.svg?branch=master)
+# WDumper [![](https://github.com/bennofs/wdumper/workflows/Java%20CI/badge.svg?branch=master)](https://github.com/bennofs/wdumper/actions)
 _A tool to create customized Wikidata RDF dumps_
 
 This project contains the source code for the application running at https://tools.wmflabs.org/wdumps.
