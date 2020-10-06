@@ -7,9 +7,6 @@ import javax.annotation.Nullable;
 import java.time.Instant;
 import java.util.Optional;
 
-import static io.github.bennofs.wdumper.model.Zenodo.Target.RELEASE;
-import static io.github.bennofs.wdumper.model.Zenodo.Target.SANDBOX;
-
 @AutoValue
 public abstract class Zenodo {
     public enum Target {

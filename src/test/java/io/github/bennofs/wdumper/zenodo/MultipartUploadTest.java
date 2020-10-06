@@ -19,8 +19,8 @@ public class MultipartUploadTest {
         final MultipartUpload upload = mapper.readValue(data, MultipartUpload.class);
 
         assertEquals("e5f855a5-ba1c-438d-8f82-251fae45c395", upload.id);
-        assertEquals(Instant.parse("2020-10-05T19:11:29.507705+00:00"), upload.created);
-        assertEquals(Instant.parse("2020-10-05T19:39:05.155796+00:00"), upload.updated);
+        assertEquals(Instant.parse("2020-10-05T19:11:29.507705Z"), upload.created);
+        assertEquals(Instant.parse("2020-10-05T19:39:05.155796Z"), upload.updated);
         assertFalse(upload.completed);
         assertEquals("test-data", upload.key);
         assertEquals("28fd69ac-7903-4ef9-88ef-f11d0c9943cc", upload.bucket);
@@ -38,8 +38,8 @@ public class MultipartUploadTest {
                 upload.links.self);
 
         final MultipartUpload.Part part0 = upload.parts.get(0);
-        assertEquals(Instant.parse("2020-10-05T19:45:08.972649+00:00"), part0.updated);
-        assertEquals(Instant.parse("2020-10-05T19:39:05.159963+00:00"), part0.created);
+        assertEquals(Instant.parse("2020-10-05T19:45:08.972649Z"), part0.updated);
+        assertEquals(Instant.parse("2020-10-05T19:39:05.159963Z"), part0.created);
         assertEquals("md5:2794699a710a75aa01d8cb0232dd0a90", part0.checksum);
         assertEquals(0, part0.partNumber);
         assertEquals(6000000, part0.endByte);
