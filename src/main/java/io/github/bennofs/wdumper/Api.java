@@ -6,82 +6,82 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
 import com.google.common.base.MoreObjects;
 import com.google.inject.AbstractModule;
+import com.google.inject.Guice;
+import com.google.inject.Injector;
 import com.google.inject.Provides;
-import com.google.inject.Scopes;
 import com.samskivert.mustache.Mustache;
-import com.zaxxer.hikari.pool.HikariPool;
+import com.zaxxer.hikari.HikariConfig;
+import com.zaxxer.hikari.HikariDataSource;
 import io.github.bennofs.wdumper.database.Database;
-import io.github.bennofs.wdumper.formatting.TimeFormatting;
 import io.github.bennofs.wdumper.model.DumpRunZenodo;
 import io.github.bennofs.wdumper.model.ModelExtension;
-import io.github.bennofs.wdumper.web.*;
+import io.github.bennofs.wdumper.templating.*;
+import io.github.bennofs.wdumper.web.DumpResource;
+import io.github.bennofs.wdumper.web.ProgressEstimator;
 import io.github.bennofs.wdumper.zenodo.ZenodoApiProvider;
 import io.github.bennofs.wdumper.zenodo.ZenodoApiProviderImpl;
 import io.github.bennofs.wdumper.zenodo.ZenodoConfiguration;
+import io.github.bennofs.wdumper.zenodo.ZenodoResource;
+import io.undertow.server.handlers.resource.PathResourceManager;
+import io.undertow.server.handlers.resource.ResourceHandler;
+import io.undertow.server.handlers.resource.ResourceManager;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
+import org.jboss.resteasy.plugins.providers.jackson.ResteasyJackson2Provider;
+import org.jboss.resteasy.plugins.server.undertow.UndertowJaxrsServer;
 import org.jooq.Configuration;
 import org.jooq.DSLContext;
 import org.jooq.SQLDialect;
 import org.jooq.impl.DSL;
 import org.jooq.impl.DefaultConfiguration;
-import ratpack.file.FileSystemBinding;
-import ratpack.func.Action;
-import ratpack.guice.Guice;
-import ratpack.handling.Chain;
-import ratpack.health.HealthCheckHandler;
-import ratpack.hikari.HikariHealthCheck;
-import ratpack.hikari.HikariModule;
-import ratpack.server.BaseDir;
-import ratpack.server.RatpackServer;
-import ratpack.server.ServerConfig;
 
-import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import javax.sql.DataSource;
+import javax.ws.rs.core.Application;
+import javax.ws.rs.ext.ContextResolver;
 import java.io.Closeable;
 import java.io.IOException;
 import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.sql.Timestamp;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
+import java.util.Collections;
+import java.util.Objects;
+import java.util.Set;
 
 /**
  * This is the main class providing the HTTP API for the frontend.
  * It also serves the static files used by the frontend.
  */
-public class Api  {
-    public static class DbHealthCheck extends HikariHealthCheck {
-        private final HikariPool pool;
-
-        @Inject
-        public DbHealthCheck(HikariPool pool) {
-            this.pool = pool;
-        }
-
-        @Override
-        public HikariPool getHikariPool() {
-            return pool;
-        }
-
-        @Override
-        public String getName() {
-            return "db";
-        }
-    }
-
+public class Api extends Application {
     public static class ApiModule extends AbstractModule {
         private final ZenodoConfiguration zenodoConfiguration;
         private final Config config;
+        private final URI publicAddress;
+        private final Path templateRoot;
 
-        public ApiModule(Config config, ZenodoConfiguration zenodoConfiguration) {
+        public ApiModule(Config config, ZenodoConfiguration zenodoConfiguration, URI publicAddress, Path templateRoot) {
             this.config = config;
             this.zenodoConfiguration = zenodoConfiguration;
+            this.publicAddress = publicAddress;
+            this.templateRoot = templateRoot;
+        }
+
+        @Provides
+        @Singleton
+        DataSource dataSource() {
+            HikariConfig hikariConfig = new HikariConfig();
+            hikariConfig.setJdbcUrl(config.databaseAddress().toString());
+            return new HikariDataSource(hikariConfig);
         }
 
         @Provides
@@ -123,19 +123,28 @@ public class Api  {
         }
 
         @Provides
-        @Singleton
-        TemplateLoader templateLoader(final FileSystemBinding files, UrlBuilder urls, ServerConfig config, ProgressEstimator progressEstimator) throws IOException {
-            final FileSystemBinding templates = files.binding("templates/");
-            final Mustache.Compiler compiler = Mustache.compiler()
-                    .strictSections(true)
-                    .withCollector(mustacheCollector(urls, progressEstimator, new TimeFormatting()))
-                    .withLoader(name -> Files.newBufferedReader(templates.file(name)));
-            return TemplateLoader.create(urls, compiler, config);
+        UrlBuilder urlBuilder() {
+            return new UrlBuilder(publicAddress);
         }
 
         @Provides
-        HealthCheckHandler healthCheckHandler() {
-            return new HealthCheckHandler();
+        @Singleton
+        TemplateLoader templateLoader(UrlBuilder urls, ProgressEstimator progressEstimator) throws IOException {
+            final Mustache.Compiler compiler = Mustache.compiler()
+                    .strictSections(true)
+                    .withCollector(mustacheCollector(urls, progressEstimator, new TimeFormatting()))
+                    .withLoader(name -> Files.newBufferedReader(templateRoot.resolve(name)));
+            return TemplateLoader.create(urls, compiler, new TemplateLoader.Config() {
+                @Override
+                public Path baseDir() {
+                    return Path.of("build/resources/main/");
+                }
+
+                @Override
+                public boolean isDevelopment() {
+                    return true; // TODO
+                }
+            });
         }
 
         @Provides
@@ -151,62 +160,28 @@ public class Api  {
         @Override
         protected void configure() {
             bind(ZenodoConfiguration.class).toInstance(zenodoConfiguration);
-
-            bind(BaseComponent.class).in(Scopes.SINGLETON);
-            bind(DumpComponent.class).in(Scopes.SINGLETON);
-            bind(DownloadComponent.class).in(Scopes.SINGLETON);
-            bind(StatusComponent.class).in(Scopes.SINGLETON);
-            bind(ZenodoComponent.class).in(Scopes.SINGLETON);
-
             bind(ZenodoApiProvider.class).to(ZenodoApiProviderImpl.class);
         }
     }
 
-    private static class BaseDirService implements Closeable {
-        private final @Nullable Path tempDir;
-        public final Path baseDir;
+    private final Set<Object> instances;
 
-        BaseDirService(@Nullable Path tempDir, Path baseDir) {
-            this.tempDir = tempDir;
-            this.baseDir = baseDir;
-        }
-
-        public static BaseDirService find() throws IOException {
-            try {
-                return new BaseDirService(null, BaseDir.find());
-            } catch (IllegalStateException e) {
-                // some IDEs (such as intellij) don't run the gradle build and therefore don't have the real resources
-                final Path resourcesBuild = Path.of("build/resources/main/").toAbsolutePath();
-                if (!Files.isRegularFile(resourcesBuild.resolve(".ratpack"))) {
-                    throw new IllegalStateException("cannot find base dir (directory containing .ratpack marker file)");
-
-                }
-                final Path resourcesSrc = Path.of("src/main/resources").toAbsolutePath();
-
-                final Path tmp = Path.of("build/tmp");
-                Files.createDirectories(tmp);
-                final Path root = Files.createTempDirectory(tmp, "ratpackResources").toAbsolutePath();
-                Files.createFile(root.resolve(".ratpack"));
-                Files.createSymbolicLink(root.resolve("db"), resourcesSrc.resolve("db"));
-                Files.createSymbolicLink(root.resolve("templates"), resourcesSrc.resolve("templates"));
-                Files.createSymbolicLink(root.resolve("static"), resourcesBuild.resolve("static"));
-                return new BaseDirService(root, root);
+    @Inject
+    public Api(DumpResource dump, ZenodoResource zenodo, ObjectMapper mapper) {
+        instances = Set.of(dump, zenodo, new ContextResolver<ObjectMapper>() {
+            @Override
+            public ObjectMapper getContext(Class<?> type) {
+                return mapper;
             }
-        }
-
-        @Override
-        public void close() throws IOException {
-            if (tempDir != null) {
-                Files.delete(tempDir.resolve(".ratpack"));
-                Files.delete(tempDir.resolve("db"));
-                Files.delete(tempDir.resolve("templates"));
-                Files.delete(tempDir.resolve("static"));
-                Files.delete(tempDir);
-            }
-        }
+        });
     }
 
-    public static void main(String... args) throws Exception {
+    @Override
+    public Set<Object> getSingletons() {
+        return instances;
+    }
+
+    public static void main(String... args) throws URISyntaxException, IOException {
         final Config config = new ConfigEnv();
 
         final URI publicAddress = URI.create(
@@ -219,50 +194,56 @@ public class Api  {
                 .sandboxToken(config.zenodoSandboxToken().orElse(null))
                 .build();
 
-        final Action<Chain> topRoutes = chain -> {
-            chain.insert(DumpComponent.class);
-            chain.insert(DownloadComponent.class);
-            chain.insert(StatusComponent.class);
-            chain.insert(ZenodoComponent.class);
-            chain.insert(BaseComponent.class);
-        };
+        final int port = ConfigEnv.intFromEnv("WDUMPER_PORT", 5050);
+        final String host = Objects.requireNonNullElse(System.getenv("WDUMPER_HOST"), "localhost");
 
-        final BaseDirService baseDirService = BaseDirService.find();
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            try {
-                baseDirService.close();
-            } catch (IOException e) {
-                e.printStackTrace();
+        final ClassLoader loader = Api.class.getClassLoader();
+        final URL webrootFile = loader.getResource(".webroot");
+        final Path templateRoot;
+        final Path staticRoot;
+        Closeable filesystem = null;
+        UndertowJaxrsServer server = new UndertowJaxrsServer();
+
+        // when running directly from IDE, the classpath doesn't include the gradle built resources
+        if (webrootFile == null) {
+            // the URL needs the end with a slash,
+            // otherwise new URL(root, "foo") will replace the last component of root with "foo"
+            templateRoot = Path.of( "src/main/resources/templates/").toAbsolutePath();
+            staticRoot = Path.of("build/resources//main/static").toAbsolutePath();
+        } else {
+            if (webrootFile.toURI().getScheme().equals("jar")) {
+                filesystem = FileSystems.newFileSystem(webrootFile.toURI(), Collections.emptyMap());
             }
-        }));
 
-        final ServerConfig serverConfig = ServerConfig.embedded()
-                .port(5050)
-                .publicAddress(publicAddress)
-                .baseDir(baseDirService.baseDir)
-                .build();
-
-        if (serverConfig.isDevelopment()) {
+            final Path base = Paths.get(new URL(webrootFile, "./").toURI());
+            templateRoot = base.resolve("templates");
+            staticRoot = base.resolve("static");
         }
 
-        // configure the ratpack web server
-        RatpackServer.start(server -> server
-                .serverConfig(serverConfig)
-                .registry(Guice.registry(b -> b
-                        .module(HikariModule.class, hikariConfig -> {
-                            hikariConfig.setJdbcUrl(config.databaseAddress().toString());
-                        })
-                        .bind(DbHealthCheck.class)
-                        .module(new ApiModule(config, zenodoConfiguration))
-                ))
-                .handlers(chain -> {
-                    final String prefix = publicAddress.getPath().replaceAll("/+$|^/+", "");
-                    if (prefix.isEmpty()) {
-                        topRoutes.execute(chain);
-                    } else {
-                        chain.prefix(prefix, topRoutes);
-                    }
-                })
-        );
+        final ResourceManager resourceManager = new PathResourceManager(staticRoot);
+        try {
+            final Injector injector = Guice.createInjector(
+                    new ApiModule(config, zenodoConfiguration, publicAddress, templateRoot)
+            );
+            final Api api = injector.getInstance(Api.class);
+            server.addResourcePrefixPath("/static", new ResourceHandler(resourceManager));
+            server.deploy(api);
+            server.setHostname(host);
+            server.setPort(port);
+            server.start();
+            Thread.currentThread().join();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                server.stop();
+            } catch (NullPointerException ignored) {
+            }
+            resourceManager.close();
+
+            if (filesystem != null) {
+                filesystem.close();
+            }
+        }
     }
 }

@@ -1,4 +1,4 @@
-package io.github.bennofs.wdumper.web;
+package io.github.bennofs.wdumper.templating;
 
 import com.google.common.collect.ImmutableList;
 import com.samskivert.mustache.DefaultCollector;

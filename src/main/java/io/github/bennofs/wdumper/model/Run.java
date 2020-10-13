@@ -1,5 +1,6 @@
 package io.github.bennofs.wdumper.model;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.auto.value.AutoValue;
 
 import javax.annotation.Nullable;
@@ -9,12 +10,25 @@ import java.util.Optional;
 
 @AutoValue
 public abstract class Run {
+    @JsonProperty
     public abstract Integer id();
+
+    @JsonProperty
     public abstract Optional<Instant> startedAt();
+
+    @JsonProperty
     public abstract Optional<Instant> finishedAt();
+
+    @JsonProperty
     public abstract Integer count();
+
+    @JsonProperty
     public abstract String toolVersion();
+
+    @JsonProperty
     public abstract String wdtkVersion();
+
+    @JsonProperty
     public abstract String dumpDate();
 
     public abstract Builder toBuilder();

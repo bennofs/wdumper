@@ -1,9 +1,6 @@
-package io.github.bennofs.wdumper.web;
+package io.github.bennofs.wdumper.templating;
 
 import com.samskivert.mustache.Template;
-import ratpack.handling.Context;
-import ratpack.http.Response;
-import ratpack.render.Renderable;
 
 import javax.annotation.Nullable;
 import java.io.ByteArrayOutputStream;
@@ -11,7 +8,7 @@ import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.util.Map;
 
-public class MustacheResponse implements Renderable {
+public class MustacheResponse {
     final Object context;
     final @Nullable Object layoutContext;
     final Template layout;
@@ -27,12 +24,7 @@ public class MustacheResponse implements Renderable {
         this.templateName = templateName;
     }
 
-    @Override
-    public void render(Context ctx) throws Exception {
-        final Response r = ctx.getResponse();
-        r.contentTypeIfNotSet("text/html");
-
-
+    public byte[] render() throws Exception {
         final ByteArrayOutputStream contentStream = new ByteArrayOutputStream(1000);
         try (final Writer writer = new OutputStreamWriter(contentStream)) {
             content.execute(context, layoutContext, writer);
@@ -43,7 +35,7 @@ public class MustacheResponse implements Renderable {
             layout.execute(Map.of("content", contentStream.toString()), layoutContext, writer);
         }
 
-        r.send(result.toByteArray());
+        return result.toByteArray();
     }
 
     @Override

@@ -20,16 +20,31 @@ public abstract class Zenodo {
     private static final String ZENODO_SANDBOX_URL_PREFIX = "https://sandbox.zenodo.org/record/";
     private static final String DOI_URL_PREFIX = "https://doi.org/";
 
+    @JsonProperty
     public abstract int id();
+
+    @JsonProperty
     public abstract int depositId();
+
+    @JsonProperty
     public abstract int dumpId();
+
+    @JsonProperty
     public abstract String doi();
+
+    @JsonProperty
     public abstract Target target();
 
+    @JsonProperty
     public abstract Instant createdAt();
+
+    @JsonProperty
     public abstract Optional<Instant> startedAt();
+
+    @JsonProperty
     public abstract Optional<Instant> completedAt();
 
+    @JsonProperty
     public abstract long uploadedBytes();
 
     public String link() {

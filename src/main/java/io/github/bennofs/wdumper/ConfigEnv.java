@@ -20,7 +20,7 @@ public class ConfigEnv implements Config {
     private final @Nullable String zenodoReleaseToken;
     private final @Nullable String zenodoSandboxToken;
 
-    private static int intFromEnv(String env, int def) {
+    static int intFromEnv(String env, int def) {
         try {
             return Integer.parseInt(Objects.requireNonNullElse(System.getenv(env), "" + def));
         } catch(NumberFormatException e) {

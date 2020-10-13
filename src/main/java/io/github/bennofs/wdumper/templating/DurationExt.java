@@ -1,6 +1,6 @@
-package io.github.bennofs.wdumper.web;
+package io.github.bennofs.wdumper.templating;
 
-import io.github.bennofs.wdumper.formatting.TimeFormatting;
+import io.github.bennofs.wdumper.templating.TimeFormatting;
 
 import java.time.Duration;
 import java.time.Instant;

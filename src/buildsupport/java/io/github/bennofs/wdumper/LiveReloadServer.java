@@ -1,20 +1,24 @@
 package io.github.bennofs.wdumper;
 
-import com.fasterxml.jackson.core.*;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import ratpack.func.Action;
-import ratpack.handling.Chain;
-import ratpack.server.RatpackServer;
-import ratpack.server.ServerConfig;
-import ratpack.websocket.*;
+import io.vertx.core.Handler;
+import io.vertx.core.Vertx;
+import io.vertx.core.VertxOptions;
+import io.vertx.core.http.ServerWebSocket;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.nio.file.Path;
-import java.util.*;
+import java.util.HashSet;
+import java.util.Optional;
+import java.util.Set;
 import java.util.logging.Logger;
 
-public class LiveReloadServer implements WebSocketHandler<WebSocket>, Action<Chain> {
+public class LiveReloadServer implements Handler<ServerWebSocket> {
     private final String livereloadJs;
     private Path commonAncestorChanged = Path.of("");
 
@@ -70,21 +74,20 @@ public class LiveReloadServer implements WebSocketHandler<WebSocket>, Action<Cha
         }
     }
 
-    public void startServer() throws Exception {
-        RatpackServer.of(s -> s
-                .serverConfig(ServerConfig.builder().findBaseDir("livereload/livereload.js").port(35729).development(true))
-                .handlers(chain -> {
-                    chain.insert(this);
-                })
-        ).start();
-    }
+    public void startServer() {
+        Vertx vertx = Vertx.vertx(new VertxOptions());
+        vertx.createHttpServer().requestHandler(req -> {
+            if (req.path().equals("/livereload.js")) {
+                req.response()
+                        .putHeader("Content-Type", "text/javascript")
+                        .end(livereloadJs);
+                return;
+            }
 
-    @Override
-    public void execute(Chain chain) throws Exception {
-        chain.get("livereload.js", ctx -> {
-            ctx.getResponse().send("application/javascript", livereloadJs);
-        });
-        chain.get("livereload", ctx -> WebSockets.websocket(ctx, this));
+            req.response()
+                    .setStatusCode(404)
+                    .end();
+        }).webSocketHandler(this).listen(35729);
     }
 
     public void reload(String path) {
@@ -96,18 +99,18 @@ public class LiveReloadServer implements WebSocketHandler<WebSocket>, Action<Cha
     }
 
     void broadcast(String message) {
-        clients.forEach(c -> c.send(message));
+        clients.forEach(c -> c.writeTextMessage(message));
     }
 
     private final static Logger LOGGER = Logger.getLogger(LiveReloadServer.class.getName());
 
-    private final Set<WebSocket> clients = new HashSet<>();
+    private final Set<ServerWebSocket> clients = new HashSet<>();
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     private final static String HELLO_MESSAGE = "" +
             "{\"command\": \"hello\", " +
             "\"protocols\": [\"http://livereload.com/protocols/official-7\"], " +
-            "\"serverName\": \"ratpack-livereload\"" +
+            "\"serverName\": \"java-livereload\"" +
             "}";
 
     private static String buildReloadMessage(String path) {
@@ -115,39 +118,43 @@ public class LiveReloadServer implements WebSocketHandler<WebSocket>, Action<Cha
                 "\"command\": \"reload\"," +
                 "\"path\": \"%s\"," +
                 "\"liveCSS\": true" +
-                "}", ""); // new String(quoteAsJsonText(path)));
+                "}", "");
     }
 
     private static String buildAlertMessage(String msg) {
         return String.format("{" +
                 "\"command\": \"alert\"," +
                 "\"message\": \"%s\"" +
-                "}", ""); // new String(quoteAsJsonText(msg)));
+                "}", "");
     }
 
+
     @Override
-    public WebSocket onOpen(WebSocket webSocket) throws Exception {
+    public void handle(ServerWebSocket socket) {
         LOGGER.fine("live reload client connected");
-        this.clients.add(webSocket);
-        return webSocket;
+        this.clients.add(socket);
+        socket.textMessageHandler(message -> {
+            try {
+                this.onMessage(socket, message);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        });
+        socket.closeHandler(v -> {
+            LOGGER.fine("live reload client disconnected");
+            this.clients.remove(socket);
+        });
     }
 
-    @Override
-    public void onClose(WebSocketClose<WebSocket> close) throws Exception {
-        LOGGER.fine("live reload client disconnected");
-        this.clients.remove(close.getOpenResult());
-    }
-
-    @Override
-    public void onMessage(WebSocketMessage<WebSocket> frame) throws Exception {
-        final Optional<String> command = parseCommand(frame.getText());
+    public void onMessage(ServerWebSocket socket, String message) throws Exception {
+        final Optional<String> command = parseCommand(message);
         if (command.isEmpty()) {
             LOGGER.info("ignoring livereload message without command");
             return;
         }
 
         if (command.get().equals("hello")) {
-            frame.getOpenResult().send(HELLO_MESSAGE);
+            socket.writeTextMessage(HELLO_MESSAGE);
         }
     }
 

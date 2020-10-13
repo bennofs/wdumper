@@ -1,35 +1,32 @@
-package io.github.bennofs.wdumper.web;
+package io.github.bennofs.wdumper.zenodo;
 
-import com.google.inject.Inject;
 import io.github.bennofs.wdumper.jooq.enums.DB_ZenodoTarget;
 import io.github.bennofs.wdumper.jooq.tables.records.DB_DumpRecord;
 import io.github.bennofs.wdumper.jooq.tables.records.DB_ZenodoRecord;
 import io.github.bennofs.wdumper.model.Zenodo;
-import io.github.bennofs.wdumper.zenodo.*;
+import io.github.bennofs.wdumper.templating.UrlBuilder;
+import javax.ws.rs.*;
+import javax.ws.rs.core.Response;
 import org.jooq.DSLContext;
-import ratpack.func.Action;
-import ratpack.handling.Chain;
-import ratpack.handling.Context;
-import ratpack.jackson.Jackson;
-import ratpack.server.PublicAddress;
 
+import javax.inject.Inject;
 import java.io.IOException;
 import java.util.Collections;
-import java.util.Objects;
 
 import static io.github.bennofs.wdumper.jooq.Tables.DUMP;
 import static io.github.bennofs.wdumper.jooq.Tables.ZENODO;
 
-public class ZenodoComponent implements Action<Chain> {
-    final DSLContext db;
-    final ZenodoApiProvider apiProvider;
+
+@Path("zenodo")
+public class ZenodoResource {
+    private final DSLContext db;
+    private final UrlBuilder urlBuilder;
+    private final ZenodoApiProvider apiProvider;
 
     @Inject
-    public ZenodoComponent(DSLContext db, ZenodoApiProvider apiProvider) {
-        Objects.requireNonNull(db);
-        Objects.requireNonNull(apiProvider);
-
+    public ZenodoResource(DSLContext db, UrlBuilder urlBuilder, ZenodoApiProvider apiProvider) {
         this.db = db;
+        this.urlBuilder = urlBuilder;
         this.apiProvider = apiProvider;
     }
 
@@ -38,14 +35,13 @@ public class ZenodoComponent implements Action<Chain> {
         public Zenodo.Target target;
     }
 
-    private String buildZenodoDescription(Context ctx, DB_DumpRecord dump) {
-        final PublicAddress addr = ctx.get(PublicAddress.class);
+    private String buildZenodoDescription(DB_DumpRecord dump) {
         return String.format("<p>RDF dump of wikidata produced with <a href=\"%s\">wdumper</a>.</p>" +
-                "<p>%s<br><a href=\"%s\">View on wdumper</a></p>" +
-                "<p><b>entity count<b>: %d, <b>statement count</b>: %d, <b>triple count</b>: %d</p>",
-                addr.get().toASCIIString(),
+                        "<p>%s<br><a href=\"%s\">View on wdumper</a></p>" +
+                        "<p><b>entity count<b>: %d, <b>statement count</b>: %d, <b>triple count</b>: %d</p>",
+                urlBuilder.urlPathString(""),
                 dump.getDescription(),
-                addr.builder().segment("dump").segment("%d", dump.getId()),
+                urlBuilder.urlPathString(String.format("dump/%d", dump.getId())),
                 dump.getEntityCount(),
                 dump.getStatementCount(),
                 dump.getTripleCount()
@@ -63,11 +59,12 @@ public class ZenodoComponent implements Action<Chain> {
         }
     }
 
-    private void post(Context ctx, ZenodoRequest request) throws ZenodoApiException, IOException {
+    @POST
+    @Consumes(value = {"application/json"})
+    public Response post(ZenodoRequest request) throws IOException, ZenodoApiException {
         final DB_DumpRecord dump = db.fetchOne(DUMP, DUMP.ID.eq(request.id));
         if (dump == null) {
-            ctx.notFound();
-            return;
+            throw new NotFoundException(String.format("there is no dump with id %d", request.id));
         }
 
         final ZenodoApi api = apiProvider.getZenodoApiFor(request.target);
@@ -81,7 +78,7 @@ public class ZenodoComponent implements Action<Chain> {
                 .creators(Collections.singletonList(Creator.builder().name("Benno Fünfstück").build()))
                 .accessRight("open")
                 .license("cc-zero")
-                .description(buildZenodoDescription(ctx, dump))
+                .description(buildZenodoDescription(dump))
                 .uploadType("dataset")
                 .build();
         deposit = api.updateDeposit(deposit);
@@ -92,29 +89,18 @@ public class ZenodoComponent implements Action<Chain> {
                 .returning(ZENODO.ID)
                 .execute();
 
-        final PublicAddress publicAddress = ctx.get(PublicAddress.class);
-        ctx.redirect(201, publicAddress.builder().path("api/zenodo").segment("%d", zenodoId));
+        return Response.created(urlBuilder.urlPath(String.format("zenodo/%d", zenodoId))).build();
     }
 
-    private void get(Context ctx, int id) {
+    @GET
+    @Produces(value = {"application/json"})
+    @Path("{id}")
+    public DB_ZenodoRecord getJson(@PathParam("id") int id) {
         final DB_ZenodoRecord record = db.fetchOne(ZENODO, ZENODO.ID.eq(id));
         if (record == null) {
-            ctx.notFound();
-        } else {
-            ctx.render(Jackson.json(record));
+            throw new NotFoundException(String.format("there is no zenodo dump record with id %d", id));
         }
-    }
 
-    @Override
-    public void execute(Chain chain) throws Exception {
-        chain.post("zenodo", ctx -> {
-            ctx.parse(Jackson.fromJson(ZenodoRequest.class)).then(r -> this.post(ctx, r));
-        }).get("zenodo/:id", ctx -> {
-            try {
-                this.get(ctx, Integer.parseInt(ctx.getPathTokens().get("id")));
-            } catch (NumberFormatException e) {
-                ctx.notFound();
-            }
-        });
+        return record;
     }
 }

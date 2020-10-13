@@ -1,9 +1,9 @@
 package io.github.bennofs.wdumper.web;
 
 import com.samskivert.mustache.Mustache;
+import io.github.bennofs.wdumper.templating.CompositeCollector;
 import org.junit.jupiter.api.Test;
 
-import javax.annotation.Nullable;
 import java.util.Map;
 import java.util.Optional;
 

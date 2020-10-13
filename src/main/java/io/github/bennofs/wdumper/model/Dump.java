@@ -1,23 +1,42 @@
 package io.github.bennofs.wdumper.model;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.auto.value.AutoValue;
 
 import javax.annotation.Nullable;
-import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.Optional;
 
 @AutoValue
 public abstract class Dump {
+    @JsonProperty
     public abstract int id();
+
+    @JsonProperty
     public abstract String title();
+
+    @JsonProperty
     public abstract String description();
+
+    @JsonProperty
     public abstract String spec();
+
+    @JsonProperty
     public abstract Instant createdAt();
+
+    @JsonProperty
     public abstract Optional<Integer> runId();
+
+    @JsonProperty
     public abstract Long compressedSize();
+
+    @JsonProperty
     public abstract Long entityCount();
+
+    @JsonProperty
     public abstract Long statementCount();
+
+    @JsonProperty
     public abstract Long tripleCount();
 
     public abstract Builder toBuilder();

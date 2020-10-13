@@ -1,4 +1,4 @@
-package io.github.bennofs.wdumper.web;
+package io.github.bennofs.wdumper.templating;
 
 import io.github.bennofs.wdumper.model.*;
 

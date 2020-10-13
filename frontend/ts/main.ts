@@ -71,8 +71,8 @@ class DumpCreator {
                 metadata: this.metadata,
             }),
             headers: { "Content-Type": "application/json" }
-        }).then(r => r.json()).then(r => {
-            window.location = r["view-url"];
+        }).then(r => {
+            window.location.href = r.url
         })
     }
 }

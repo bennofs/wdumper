@@ -1,4 +1,4 @@
-package io.github.bennofs.wdumper.web;
+package io.github.bennofs.wdumper.templating;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -7,6 +7,7 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
 import io.github.bennofs.wdumper.model.DumpRunZenodo;
 import io.github.bennofs.wdumper.model.Progress;
+import io.github.bennofs.wdumper.web.ProgressEstimator;
 
 import java.io.IOException;
 import java.net.URLEncoder;
@@ -75,7 +76,7 @@ public class DumpRunZenodoExt {
     }
 
     public String link() {
-        return urls.urlPath("dump/" + dumpRunZenodo.dump.id());
+        return urls.urlPathString("dump/" + dumpRunZenodo.dump.id());
     }
 
     public Optional<String> linkDownload() {
@@ -83,7 +84,7 @@ public class DumpRunZenodoExt {
             return Optional.empty();
         }
 
-        return Optional.of(urls.urlPath("download/" + dumpRunZenodo.dump.id()));
+        return Optional.of(urls.urlPathString("download/" + dumpRunZenodo.dump.id()));
     }
 
     public Optional<Progress> processing() {

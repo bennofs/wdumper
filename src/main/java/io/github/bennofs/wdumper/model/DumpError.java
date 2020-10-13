@@ -1,5 +1,6 @@
 package io.github.bennofs.wdumper.model;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.auto.value.AutoValue;
 
 import javax.annotation.Nullable;
@@ -9,8 +10,13 @@ import java.util.Optional;
 @AutoValue
 public abstract class DumpError {
     public enum Level {
+        @JsonProperty("critical")
         CRITICAL,
+
+        @JsonProperty("error")
         ERROR,
+
+        @JsonProperty("warning")
         WARNING;
 
         public String levelName() {
@@ -27,12 +33,25 @@ public abstract class DumpError {
         }
     }
 
+    @JsonProperty
     public abstract int id();
+
+    @JsonProperty
     public abstract Instant loggedAt();
+
+    @JsonProperty
     public abstract Optional<Integer> dumpId();
+
+    @JsonProperty
     public abstract Optional<Integer> runId();
+
+    @JsonProperty
     public abstract Optional<Integer> zenodoId();
+
+    @JsonProperty
     public abstract Level level();
+
+    @JsonProperty
     public abstract String message();
 
     public abstract Builder toBuilder();

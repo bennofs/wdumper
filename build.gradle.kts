@@ -1,6 +1,4 @@
 import com.moowork.gradle.node.yarn.YarnTask
-import io.freefair.gradle.plugins.jsass.SassCompile
-import java.net.URI
 
 
 plugins {
@@ -13,17 +11,8 @@ plugins {
     // Shadow is a plugin to generate a self-contained jar with all dependencies included ("fatJar")
     id("com.github.johnrengelman.shadow").version("5.0.0")
 
-    // Ratpack Web Framework
-    id("io.ratpack.ratpack-java").version("1.8.0")
-
-    // Compile SCSS
-    id("io.freefair.jsass-base").version("5.0.0")
-
     // Run node tasks with gradle
     id("com.github.node-gradle.node").version("2.2.3")
-
-    // Generate type script definitions from Java POJOs
-    id("cz.habarta.typescript-generator").version("2.25.695")
 
     // Daemons for gradle continuous build
     id("io.github.bennofs.continuous-exec")
@@ -93,8 +82,12 @@ dependencies {
     runtimeOnly("org.slf4j:slf4j-simple:1.7.26")
 
     // json
-    implementation("com.fasterxml.jackson:jackson-bom:2.10.3")
-    implementation("com.fasterxml.jackson.module:jackson-module-parameter-names:2.10.3")
+    implementation(enforcedPlatform("com.fasterxml.jackson:jackson-bom:2.10.3"))
+    implementation("com.fasterxml.jackson.core:jackson-databind")
+    implementation("com.fasterxml.jackson.core:jackson-annotations")
+    implementation("com.fasterxml.jackson.module:jackson-module-parameter-names")
+    implementation("com.fasterxml.jackson.datatype:jackson-datatype-jdk8")
+    implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310")
 
     // mysql
     implementation("mysql:mysql-connector-java:8.0.16")
@@ -102,6 +95,14 @@ dependencies {
     implementation("org.liquibase:liquibase-core:3.8.5")
     implementation("org.testcontainers:testcontainers:1.14.3")
     implementation("org.testcontainers:mariadb:1.14.3")
+    implementation("com.zaxxer:HikariCP:3.4.5")
+
+    // web
+    implementation("org.jboss.resteasy:resteasy-core:4.5.8.Final")
+    implementation("org.jboss.resteasy:resteasy-core-spi:4.5.8.Final")
+    implementation("org.jboss.resteasy:resteasy-undertow:4.5.8.Final")
+    implementation("org.jboss.resteasy:resteasy-jackson2-provider:4.5.8.Final")
+    implementation("io.undertow:undertow-core:2.2.0.Final")
 
     // HTTP rest client
     implementation("org.apache.httpcomponents:httpclient:4.5.9")
@@ -128,20 +129,13 @@ dependencies {
     "buildsupportImplementation"("mysql:mysql-connector-java:8.0.16")
     "buildsupportImplementation"("org.testcontainers:testcontainers:1.14.3")
     "buildsupportImplementation"("org.testcontainers:mariadb:1.14.3")
-    "buildsupportImplementation"(ratpack.core)
     "buildsupportImplementation"(platform("com.fasterxml.jackson:jackson-bom:2.10.3"))
     "buildsupportImplementation"("com.fasterxml.jackson.core:jackson-core")
     "buildsupportImplementation"("com.fasterxml.jackson.core:jackson-databind")
+    "buildsupportImplementation"("io.vertx:vertx-core:3.9.3")
     "buildsupportRuntimeOnly"("org.slf4j:slf4j-simple:1.7.26")
 
-    // Ratpack modules
-    implementation(ratpack.dependency("hikari"))
-
     // Dependency injection
-    //
-    // force a newer version of guice than what is shipped with Ratpack,
-    // since this is needed on recent JVM versions to get accurate exceptions when there are any errors
-    // during dependency injection
     implementation("com.google.inject:guice:4.2.3")
 
     // AutoValue
@@ -187,7 +181,7 @@ tasks.processResources.configure {
     from("frontend/static") { into("static/") }
 
     doLast {
-        destinationDir.resolve(".ratpack").writeText("")
+        destinationDir.resolve(".webroot").writeText("")
     }
 }
 

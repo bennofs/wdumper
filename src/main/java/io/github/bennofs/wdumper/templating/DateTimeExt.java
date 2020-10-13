@@ -1,13 +1,9 @@
-package io.github.bennofs.wdumper.web;
+package io.github.bennofs.wdumper.templating;
 
-import io.github.bennofs.wdumper.formatting.TimeFormatting;
+import io.github.bennofs.wdumper.templating.TimeFormatting;
 
-import java.time.Duration;
 import java.time.Instant;
-import java.time.ZoneOffset;
-import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
-import java.time.temporal.ChronoUnit;
 
 public class DateTimeExt {
     private final Instant time;

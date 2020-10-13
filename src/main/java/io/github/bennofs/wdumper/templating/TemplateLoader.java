@@ -1,11 +1,8 @@
-package io.github.bennofs.wdumper.web;
+package io.github.bennofs.wdumper.templating;
 
 import com.google.common.collect.ImmutableMap;
 import com.samskivert.mustache.Mustache;
 import com.samskivert.mustache.Template;
-import ratpack.registry.Registry;
-import ratpack.render.Renderable;
-import ratpack.server.ServerConfig;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -20,62 +17,67 @@ public class TemplateLoader {
     private final Mustache.Compiler mustacheCompiler;
     private final Map<String, Template> templateCache = new ConcurrentHashMap<>();
     private final ImmutableMap<String, String> resources;
-    private final boolean isDevelopment;
+    private final Config config;
+
+    public interface Config {
+        Path baseDir();
+        boolean isDevelopment();
+    }
 
 
-    TemplateLoader(UrlBuilder urls, Mustache.Compiler mustacheCompiler, ImmutableMap<String, String> resources, boolean isDevelopment) {
+    TemplateLoader(UrlBuilder urls, Mustache.Compiler mustacheCompiler, ImmutableMap<String, String> resources, Config config) {
         this.urls = urls;
         this.mustacheCompiler = mustacheCompiler;
         this.resources = resources;
-        this.isDevelopment = isDevelopment;
+        this.config = config;
     }
 
-    public static TemplateLoader create(UrlBuilder urls, Mustache.Compiler mustacheCompiler, ServerConfig serverConfig) throws IOException {
-        return new TemplateLoader(urls, mustacheCompiler, loadResources(urls, serverConfig), serverConfig.isDevelopment());
+    public static TemplateLoader create(UrlBuilder urls, Mustache.Compiler mustacheCompiler, Config config) throws IOException {
+        return new TemplateLoader(urls, mustacheCompiler, loadResources(urls, config), config);
     }
 
     private Template loadTemplate(String name) {
-        if (!isDevelopment) {
+        if (!config.isDevelopment()) {
             return templateCache.computeIfAbsent(name, mustacheCompiler::loadTemplate);
         } else {
             return mustacheCompiler.loadTemplate(name);
         }
     }
 
-    public Renderable template(Registry ratpackCtx, String name, String view, Object context) {
+    public byte[] render(String name, String view, Object context) throws Exception {
         final Template content = loadTemplate(name);
         final Template layout = loadTemplate("base.mustache");
         return new MustacheResponse(layout,
                 Map.of(
                         "resources", resources,
-                        "path", (Mustache.Lambda) (frag, out) -> out.write(urls.urlPath(frag.decompile())),
+                        "path", (Mustache.Lambda) (frag, out) -> out.write(urls.urlPathString(frag.decompile())),
                         "view", view,
-                        "isDevelopment", isDevelopment
+                        "isDevelopment", config.isDevelopment()
                 ),
                 content,
                 context,
-                name);
+                name).render();
     }
 
 
-    public Renderable template(Registry ratpackCtx, String name, String view) {
-        return template(ratpackCtx, name, view, Collections.emptyMap());
+    public byte[] render(String name, String view) throws Exception {
+        return render(name, view, Collections.emptyMap());
     }
 
-    private static ImmutableMap<String, String> loadResources(UrlBuilder urls, ServerConfig serverConfig) throws IOException {
-        final Path from = serverConfig.getBaseDir().file("static").toRealPath();
+    private static ImmutableMap<String, String> loadResources(UrlBuilder urls, Config config) throws IOException {
+        final Path from = config.baseDir().resolve("static").toRealPath();
         final HashMap<String, String> resources = new HashMap<>();
-        resources.put("url/api", urls.urlPrefix("api"));
-        resources.put("url/root", urls.urlPrefix(""));
+        resources.put("url/api", urls.urlPrefixString(""));
+        resources.put("url/root", urls.urlPrefixString(""));
 
-        final boolean preferMinimized = !serverConfig.isDevelopment();
+        final boolean preferMinimized = !config.isDevelopment();
         try (final var files = Files.walk(from)) {
             files.forEach(path -> {
                 final String relative = from.relativize(path).toString();
 
                 // add directories as url/dirname resource
                 if (Files.isDirectory(path)) {
-                    resources.put("url/" + relative, urls.urlPath("static" + "/" + relative));
+                    resources.put("url/" + relative, urls.urlPathString("static" + "/" + relative));
                     return;
                 }
 
@@ -107,7 +109,7 @@ public class TemplateLoader {
                     return;
                 }
 
-                resources.put(key, urls.urlPath("static" + "/" + relative));
+                resources.put(key, urls.urlPathString("static" + "/" + relative));
             });
         }
 
