@@ -1,5 +1,5 @@
 import com.moowork.gradle.node.yarn.YarnTask
-
+import me.qoomon.gradle.gitversioning.GitVersioningPluginConfig
 
 plugins {
     // Apply the java plugin to add support for Java
@@ -8,14 +8,14 @@ plugins {
     // Apply the application plugin to add support for building an application
     application
 
-    // Shadow is a plugin to generate a self-contained jar with all dependencies included ("fatJar")
-    id("com.github.johnrengelman.shadow").version("5.0.0")
-
     // Run node tasks with gradle
     id("com.github.node-gradle.node").version("2.2.3")
 
     // Daemons for gradle continuous build
     id("io.github.bennofs.continuous-exec")
+
+    // Compute version name from git
+    id("me.qoomon.git-versioning").version("3.0.0")
 }
 
 java.sourceCompatibility = JavaVersion.toVersion("11")
@@ -148,12 +148,27 @@ application {
     mainClassName = "io.github.bennofs.wdumper.Api"
 }
 
-node {
-    download = false
+// additional start script for backend
+val startScriptsBackend by tasks.registering(CreateStartScripts::class) {
+    applicationName = "wdumper-backend"
+    mainClass.set("io.github.bennofs.wdumper.Backend")
+
+    outputDir = file("$buildDir/scripts")
+    classpath = project.tasks.startScripts.get().classpath
+    modularity.inferModulePath.set(project.tasks.startScripts.get().modularity.inferModulePath)
+}
+distributions {
+    main {
+        contents {
+            from(startScriptsBackend) {
+                into("bin/")
+            }
+        }
+    }
 }
 
-tasks.named<com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar>("shadowJar") {
-    mergeServiceFiles()
+node {
+    download = false
 }
 
 
@@ -185,13 +200,12 @@ tasks.processResources.configure {
     }
 }
 
-val generateToolVersion by tasks.registering(Exec::class) {
-    doFirst {
-        val outputDir = project.buildDir.resolve("generated/resources/meta")
-        outputDir.mkdirs()
-        standardOutput = outputDir.resolve("tool-version").outputStream()
+val generateToolVersion by tasks.registering {
+    doLast {
+        val dir = file("$buildDir/generated/resources/meta")
+        dir.mkdirs()
+        dir.resolve("tool-version").writeText(project.version.toString())
     }
-    commandLine("git", "rev-parse", "HEAD")
 }
 
 val generateWDTKVersion by tasks.registering {
@@ -295,5 +309,16 @@ val devdb by tasks.register<io.github.bennofs.gradle.continuous.ContinuousJavaEx
 }
 run.dependsOn(devdb)
 runBackend.dependsOn(devdb)
+//endregion
 
+//region Deployment tasks
+tasks.named("distZip") { enabled = false }
+tasks.named("distTar") { enabled = false }
+
+gitVersioning {
+    val config = GitVersioningPluginConfig()
+    config.commitVersionDescription = GitVersioningPluginConfig.CommitVersionDescription()
+    config.commitVersionDescription.versionFormat = "\${commit}"
+    apply(config)
+}
 //endregion
