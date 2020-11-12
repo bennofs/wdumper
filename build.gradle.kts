@@ -12,7 +12,7 @@ plugins {
     id("com.github.node-gradle.node").version("2.2.3")
 
     // Daemons for gradle continuous build
-    id("io.github.bennofs.continuous-exec")
+    id("io.github.bennofs.continuous-exec").version("0.1.1")
 
     // Compute version name from git
     id("me.qoomon.git-versioning").version("3.0.0")
@@ -22,7 +22,7 @@ java.sourceCompatibility = JavaVersion.toVersion("11")
 java.targetCompatibility = JavaVersion.toVersion("11")
 
 val changeLogFile = "${project.rootDir}/src/main/resources/db/changelog.xml"
-val jooqGenerateDir = "${project.buildDir}/generated/sources/jooq"
+val jooqGenerateDir = "${project.rootDir}/src/generated/jooq"
 
 val buildsupport: SourceSet by sourceSets.creating {}
 
@@ -41,7 +41,7 @@ sourceSets {
             output.dir(project.buildDir.resolve("generated/resources"), "builtBy" to "generateResources")
         }
         java {
-            srcDir(jooqGenerate)
+            srcDir(jooqGenerateDir)
         }
     }
 }
@@ -157,10 +157,24 @@ val startScriptsBackend by tasks.registering(CreateStartScripts::class) {
     classpath = project.tasks.startScripts.get().classpath
     modularity.inferModulePath.set(project.tasks.startScripts.get().modularity.inferModulePath)
 }
+
+// additional start script for cli
+val startScriptsCli by tasks.registering(CreateStartScripts::class) {
+    applicationName = "wdumper-cli"
+    mainClass.set("io.github.bennofs.wdumper.Cli")
+
+    outputDir = file("$buildDir/scripts")
+    classpath = project.tasks.startScripts.get().classpath
+    modularity.inferModulePath.set(project.tasks.startScripts.get().modularity.inferModulePath)
+}
+
 distributions {
     main {
         contents {
             from(startScriptsBackend) {
+                into("bin/")
+            }
+            from(startScriptsCli) {
                 into("bin/")
             }
         }

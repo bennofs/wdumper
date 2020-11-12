@@ -21,11 +21,6 @@ pluginManagement {
             if (requested.id.id == "cz.habarta.typescript-generator") {
                 useModule("cz.habarta.typescript-generator:typescript-generator-gradle-plugin:${requested.version ?: "+"}")
             }
-
-            if (requested.id.id == "io.github.bennofs.continuous-exec") {
-                // remove when plugin is approved to gradle plugins portal
-                useModule("com.github.bennofs:gradle-continuous-exec:v0.1.1")
-            }
         }
     }
 }

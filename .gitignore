@@ -4,8 +4,9 @@
 # Ignore build outputs 
 build
 out
-generated
-generated_tests
+/generated
+/data/generated
+/generated_tests
 node_modules
 dist
 .nuxt
