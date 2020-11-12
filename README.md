@@ -5,37 +5,7 @@ This project contains the source code for the application running at https://too
 
 ## Building
 
-To build the backend, run `gradle build` in the root directory.  
-To build the frontend, run:
-
-```sh
-$ cd frontend
-$ python3 -m venv env
-$ source env/bin/activate
-$ pip install -r requirements.txt
-$ npm install && npm run all
-```
-
-## Running
-
-The system requires a MariaDB/MySQL database.
-The default config will try to connect to `root@localhost` (without password)
-with the database name `wdumper`. You can change these values with the 
-environment variables `DB_HOST`, `DB_USER`, `DB_PASSWORD` and `DB_NAME`.
-
-To initialize the database and start the frontend server, run:
-```sh
-$ cd frontend
-$ source env/bin/activate
-$ flask db migrate
-$ flask run
-```
-You should then be able to access the web application at http://localhost:5000/.
-
-Start the backend, which processes the dump requests from the frontend, with:
-```
-$ java -jar build/wdumper-all.jar /path/to/wikidata-20191111-all.json.gz 
-```
+To build the project, run `gradle build` in the root directory.  
 
 ## Environment variables for configuration
 
