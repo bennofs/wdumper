@@ -7,4 +7,4 @@ RUN apt-get update && apt-get -y install nodejs npm yarn
 ADD . /src
 RUN cd /src && ./gradlew install -x test # tests require db, which requires docker
 
-ENTRYPOINT "/src/build/install/wdumper/bin/wdumper-cli"
+ENTRYPOINT [ "/src/build/install/wdumper/bin/wdumper-cli" ]
