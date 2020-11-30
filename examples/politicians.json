@@ -4,7 +4,7 @@
   "version": "1",
   "entities": [
     {
-      "type": "property",
+      "type": "item",
       "id": 2,
       "properties": [
         {
