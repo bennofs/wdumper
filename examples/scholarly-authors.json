@@ -36,7 +36,6 @@
   "labels": true,
   "descriptions": false,
   "aliases": false,
-  "truthy": false,
   "meta": true,
   "sitelinks": false
 }
