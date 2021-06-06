@@ -157,6 +157,7 @@ public class Backend implements Runnable, Closeable {
 
     private static Backend create(Config config) throws SQLException {
         HikariConfig hikariConfig = new HikariConfig();
+        hikariConfig.setMaxLifetime(config.databaseMaxLifetime().toMillis());
         hikariConfig.setJdbcUrl(config.databaseAddress().toString());
         final DataSource dataSource = new HikariDataSource(hikariConfig);
 

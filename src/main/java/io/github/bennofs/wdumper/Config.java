@@ -69,6 +69,11 @@ public interface Config extends
     URI databaseAddress();
 
     /**
+     * @return maximum lifetime of a single database connection.
+     */
+    Duration databaseMaxLifetime();
+
+    /**
      * @return API token for the main zenodo instance. Empty if not configured.
      */
     Optional<String> zenodoReleaseToken();

@@ -9,13 +9,14 @@ To build the project, run `gradle build` in the root directory.
 
 ## Environment variables for configuration
 
-| Name                 | Description                               | Default                      |
-|----------------------|-------------------------------------------|------------------------------|
-| DB_HOST              | hostname for MariaDB connection           | localhost                    |
-| DB_USER              | username to connect to the DB             | root                         |
-| DB_PASSWORD          | password to connect to the DB             |                              |
-| DB_NAME              | name of the database to use               | wdumper                      |
-| ZENODO_SANDBOX_TOKEN | API token for uploads to zenodo sandbox   |                              |
-| ZENODO_TOKEN         | API token for uploads to main zenodo      |                              |
-| DUMPS_PATH           | path where the generated dumps are stored | frontend/dumpfiles/generated |
-| PUBLIC_URL           | Public URL pointing to the web server     | http://localhost:5050/       |
+| Name                 | Description                                | Default                      |
+|----------------------|--------------------------------------------|------------------------------|
+| DB_HOST              | hostname for MariaDB connection            | localhost                    |
+| DB_USER              | username to connect to the DB              | root                         |
+| DB_PASSWORD          | password to connect to the DB              |                              |
+| DB_NAME              | name of the database to use                | wdumper                      |
+| DB_MAX_LIFETIME      | max lifetime  of a db connection (seconds) | 500                          |
+| ZENODO_SANDBOX_TOKEN | API token for uploads to zenodo sandbox    |                              |
+| ZENODO_TOKEN         | API token for uploads to main zenodo       |                              |
+| DUMPS_PATH           | path where the generated dumps are stored  | frontend/dumpfiles/generated |
+| PUBLIC_URL           | Public URL pointing to the web server      | http://localhost:5050/       |
