@@ -168,19 +168,6 @@ val startScriptsCli by tasks.registering(CreateStartScripts::class) {
     modularity.inferModulePath.set(project.tasks.startScripts.get().modularity.inferModulePath)
 }
 
-distributions {
-    main {
-        contents {
-            from(startScriptsBackend) {
-                into("bin/")
-            }
-            from(startScriptsCli) {
-                into("bin/")
-            }
-        }
-    }
-}
-
 node {
     download = false
 }
@@ -328,6 +315,7 @@ runBackend.dependsOn(devdb)
 //region Deployment tasks
 tasks.named("distZip") { enabled = false }
 tasks.named("distTar") { enabled = false }
+tasks.named("startScripts") { enabled = false }
 
 gitVersioning {
     val config = GitVersioningPluginConfig()
