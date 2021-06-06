@@ -153,7 +153,7 @@ val startScriptsBackend by tasks.registering(CreateStartScripts::class) {
     applicationName = "wdumper-backend"
     mainClass.set("io.github.bennofs.wdumper.Backend")
 
-    outputDir = file("$buildDir/scripts")
+    outputDir = file("$buildDir/backend-scripts")
     classpath = project.tasks.startScripts.get().classpath
     modularity.inferModulePath.set(project.tasks.startScripts.get().modularity.inferModulePath)
 }
@@ -163,9 +163,22 @@ val startScriptsCli by tasks.registering(CreateStartScripts::class) {
     applicationName = "wdumper-cli"
     mainClass.set("io.github.bennofs.wdumper.Cli")
 
-    outputDir = file("$buildDir/scripts")
+    outputDir = file("$buildDir/cli-scripts")
     classpath = project.tasks.startScripts.get().classpath
     modularity.inferModulePath.set(project.tasks.startScripts.get().modularity.inferModulePath)
+}
+
+distributions {
+    main {
+        contents {
+            from(startScriptsBackend) {
+                into("bin/")
+            }
+            from(startScriptsCli) {
+                into("bin/")
+            }
+        }
+    }
 }
 
 node {
