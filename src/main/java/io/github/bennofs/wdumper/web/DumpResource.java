@@ -11,13 +11,11 @@ import io.github.bennofs.wdumper.model.DumpRunZenodo;
 import io.github.bennofs.wdumper.spec.DumpSpecJson;
 import io.github.bennofs.wdumper.templating.TemplateLoader;
 import io.github.bennofs.wdumper.templating.UrlBuilder;
-import javax.ws.rs.*;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
 import org.apache.commons.lang3.Range;
 
 import javax.inject.Inject;
-import java.io.IOException;
+import javax.ws.rs.*;
+import javax.ws.rs.core.Response;
 import java.net.URI;
 import java.nio.file.Files;
 import java.util.*;
@@ -136,7 +134,7 @@ public class DumpResource {
 
     @GET
     @Path("/download/{id}")
-    public Response download(@PathParam("id") long id) throws IOException {
+    public Response download(@PathParam("id") long id) {
         final String fname = "wdump-" + id + ".nt.gz";
         final java.nio.file.Path path = java.nio.file.Path.of("dumpfiles/generated/" + fname);
         if (!Files.exists(path)) {

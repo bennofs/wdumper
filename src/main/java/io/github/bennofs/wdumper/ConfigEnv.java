@@ -17,6 +17,7 @@ public class ConfigEnv implements Config {
     private final Duration maxDumpRequestAge;
     private final int previewSize;
     private final URI databaseAddress;
+    private final Duration databaseMaxLifetime;
     private final @Nullable String zenodoReleaseToken;
     private final @Nullable String zenodoSandboxToken;
 
@@ -47,6 +48,7 @@ public class ConfigEnv implements Config {
         } else {
             this.databaseAddress = URI.create(addressFromEnv);
         }
+        this.databaseMaxLifetime = Duration.of(intFromEnv("DB_MAX_LIFETIME", 500), ChronoUnit.SECONDS);
 
         this.zenodoReleaseToken = System.getenv("ZENODO_TOKEN");
         this.zenodoSandboxToken = System.getenv("ZENODO_SANDBOX_TOKEN");
@@ -90,6 +92,11 @@ public class ConfigEnv implements Config {
     @Override
     public URI databaseAddress() {
         return databaseAddress;
+    }
+
+    @Override
+    public Duration databaseMaxLifetime() {
+        return databaseMaxLifetime;
     }
 
     @Override

@@ -1,4 +1,4 @@
 #!/usr/bin/env bash
 
-cd /data/project/wdumps/dumpfiles/generated
-find -mtime +14 | xargs rm -vf || echo "nothing to delete"
+cd /data/project/wdumps/dumpfiles/generated || exit
+find -mtime +14 -exec rm -vf '{}' '+' || echo "nothing to delete"

@@ -80,6 +80,7 @@ public class Api extends Application {
         @Singleton
         DataSource dataSource() {
             HikariConfig hikariConfig = new HikariConfig();
+            hikariConfig.setMaxLifetime(config.databaseMaxLifetime().toMillis());
             hikariConfig.setJdbcUrl(config.databaseAddress().toString());
             return new HikariDataSource(hikariConfig);
         }

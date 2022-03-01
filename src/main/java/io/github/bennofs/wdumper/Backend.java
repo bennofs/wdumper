@@ -157,6 +157,7 @@ public class Backend implements Runnable, Closeable {
 
     private static Backend create(Config config) throws SQLException {
         HikariConfig hikariConfig = new HikariConfig();
+        hikariConfig.setMaxLifetime(config.databaseMaxLifetime().toMillis());
         hikariConfig.setJdbcUrl(config.databaseAddress().toString());
         final DataSource dataSource = new HikariDataSource(hikariConfig);
 
@@ -183,12 +184,19 @@ public class Backend implements Runnable, Closeable {
         final BuildConfig buildConfig = BuildConfig.retrieve();
         System.err.println("Backend version " + buildConfig.toolVersion() + " with WDTK version " + buildConfig.wdtkVersion());
 
+        int exitCode;
         try (Backend app = Backend.create(new ConfigEnv())) {
-            new CommandLine(app).execute(args);
+            exitCode = new CommandLine(app).execute(args);
         } catch(SQLException e) {
+            exitCode = 1;
             System.err.println("initialization failed: " + e.toString());
             e.printStackTrace();
         }
+
+        // make sure that when the main thread exits, the process exits
+        // this is important for reliability: if the main process ends up here, then it's not in a healthy state.
+        // exiting allows the process manager to notice that and restart the process.
+        System.exit(exitCode);
     }
 }
 
