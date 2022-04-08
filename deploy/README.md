@@ -6,6 +6,7 @@ This directory hosts files required for the deployment of the tool on the toolfo
 
 - `clean-old.sh`: remove old dumpfiles. should be run by cron 
 - `clear-failed-run.sh RUNID`: restart all dumps that were assigned to run `RUNID`
+- `clean-uploaded.sh`: remove dumpfiles which have been upoaded to zenodo successfully
 - `query-stuck.sh`: find runs which didn't finish (got started too far in the past)
 - `deploy-web.sh`: ensure web frontend is deployed and up-to-date (performs updates if necessary)
 - `deploy-worker.sh`: ensure backend worker is running and up-to-date (performs updates if necessary)
