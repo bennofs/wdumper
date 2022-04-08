@@ -1,2 +1,3 @@
 #!/usr/bin/env bash
-jsub -N wdumper -mem 9000m /data/project/wdumps/scripts/worker.sh
+cd $(dirname "${BASH_SOURCE[0]}")/..
+toolforge-jobs run backend --command ./scripts/worker.sh --mem "4G" --image  tf-jdk17
