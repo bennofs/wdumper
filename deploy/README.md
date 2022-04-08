@@ -11,6 +11,7 @@ This directory hosts files required for the deployment of the tool on the toolfo
 - `deploy-web.sh`: ensure web frontend is deployed and up-to-date (performs updates if necessary)
 - `deploy-worker.sh`: ensure backend worker is running and up-to-date (performs updates if necessary)
 - `worker.sh`: script that is started on a toolforge grid compute node
+- `web.sh`: script that is executed by a toolforge webservice 
 
 ## Files
 
