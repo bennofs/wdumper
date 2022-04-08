@@ -168,6 +168,16 @@ val startScriptsCli by tasks.registering(CreateStartScripts::class) {
     modularity.inferModulePath.set(project.tasks.startScripts.get().modularity.inferModulePath)
 }
 
+// additional start script for api
+val startScriptsApi by tasks.registering(CreateStartScripts::class) {
+    applicationName = "wdumper-api"
+    mainClass.set("io.github.bennofs.wdumper.Api")
+
+    outputDir = file("$buildDir/api-scripts")
+    classpath = project.tasks.startScripts.get().classpath
+    modularity.inferModulePath.set(project.tasks.startScripts.get().modularity.inferModulePath)
+}
+
 distributions {
     main {
         contents {
@@ -175,6 +185,9 @@ distributions {
                 into("bin/")
             }
             from(startScriptsCli) {
+                into("bin/")
+            }
+            from(startScriptsApi) {
                 into("bin/")
             }
         }
