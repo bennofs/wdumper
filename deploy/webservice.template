@@ -1,0 +1,7 @@
+backend: kubernetes
+version: 4
+# leave 100m for daily periodic job
+cpu: 900m
+type: jdk11
+extra_args:
+- ./deploy/job-web.sh

@@ -20,7 +20,7 @@ public class TemplateLoader {
     private final Config config;
 
     public interface Config {
-        Path baseDir();
+        Path staticDir();
         boolean isDevelopment();
     }
 
@@ -65,7 +65,7 @@ public class TemplateLoader {
     }
 
     private static ImmutableMap<String, String> loadResources(UrlBuilder urls, Config config) throws IOException {
-        final Path from = config.baseDir().resolve("static").toRealPath();
+        final Path from = config.staticDir();
         final HashMap<String, String> resources = new HashMap<>();
         resources.put("url/api", urls.urlPrefixString(""));
         resources.put("url/root", urls.urlPrefixString(""));

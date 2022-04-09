@@ -41,7 +41,7 @@ public class ProgressEstimator {
         final Instant startedAt = r.startedAt().get();
 
         final RunStats stats = getStats();
-        final long percentCompleted = r.count() * 100 / stats.entityCount;
+        final long percentCompleted = r.count().longValue() * 100 / stats.entityCount;
         final Duration estimatedRemaining = stats.averageTimePerEntity.multipliedBy(stats.entityCount - r.count());
 
         return Optional.of(new Progress(startedAt, estimatedRemaining, percentCompleted));

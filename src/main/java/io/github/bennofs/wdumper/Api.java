@@ -68,18 +68,23 @@ public class Api extends Application {
         private final Config config;
         private final URI publicAddress;
         private final Path templateRoot;
+        private final Path staticRoot;
+        private final boolean development;
 
-        public ApiModule(Config config, ZenodoConfiguration zenodoConfiguration, URI publicAddress, Path templateRoot) {
+        public ApiModule(Config config, ZenodoConfiguration zenodoConfiguration, URI publicAddress, Path templateRoot, Path staticRoot, boolean development) {
             this.config = config;
             this.zenodoConfiguration = zenodoConfiguration;
             this.publicAddress = publicAddress;
             this.templateRoot = templateRoot;
+            this.staticRoot = staticRoot;
+            this.development = development;
         }
 
         @Provides
         @Singleton
         DataSource dataSource() {
             HikariConfig hikariConfig = new HikariConfig();
+            hikariConfig.setMinimumIdle(2);
             hikariConfig.setMaxLifetime(config.databaseMaxLifetime().toMillis());
             hikariConfig.setJdbcUrl(config.databaseAddress().toString());
             return new HikariDataSource(hikariConfig);
@@ -137,13 +142,13 @@ public class Api extends Application {
                     .withLoader(name -> Files.newBufferedReader(templateRoot.resolve(name)));
             return TemplateLoader.create(urls, compiler, new TemplateLoader.Config() {
                 @Override
-                public Path baseDir() {
-                    return Path.of("build/resources/main/");
+                public Path staticDir() {
+                    return staticRoot;
                 }
 
                 @Override
                 public boolean isDevelopment() {
-                    return true; // TODO
+                    return development;
                 }
             });
         }
@@ -210,7 +215,7 @@ public class Api extends Application {
             // the URL needs the end with a slash,
             // otherwise new URL(root, "foo") will replace the last component of root with "foo"
             templateRoot = Path.of( "src/main/resources/templates/").toAbsolutePath();
-            staticRoot = Path.of("build/resources//main/static").toAbsolutePath();
+            staticRoot = Path.of("build/resources/main/static").toAbsolutePath();
         } else {
             if (webrootFile.toURI().getScheme().equals("jar")) {
                 filesystem = FileSystems.newFileSystem(webrootFile.toURI(), Collections.emptyMap());
@@ -224,7 +229,7 @@ public class Api extends Application {
         final ResourceManager resourceManager = new PathResourceManager(staticRoot);
         try {
             final Injector injector = Guice.createInjector(
-                    new ApiModule(config, zenodoConfiguration, publicAddress, templateRoot)
+                    new ApiModule(config, zenodoConfiguration, publicAddress, templateRoot, staticRoot,webrootFile == null)
             );
             final Api api = injector.getInstance(Api.class);
             server.addResourcePrefixPath("/static", new ResourceHandler(resourceManager));

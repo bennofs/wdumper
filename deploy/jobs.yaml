@@ -1,6 +1,0 @@
-- name: backend
-  command: ./scripts/worker.sh
-  image: tf-jdk17
-  emails: none
-  memory: "4G"
-  cpu: 1
