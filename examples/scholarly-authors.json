@@ -8,7 +8,6 @@
           "id": 1,
           "property": "P31",
           "type": "entityid",
-          "truthy": false,
           "value": "Q13442814"
         }
       ]
@@ -36,7 +35,6 @@
   "labels": true,
   "descriptions": false,
   "aliases": false,
-  "truthy": false,
   "meta": true,
   "sitelinks": false
 }
